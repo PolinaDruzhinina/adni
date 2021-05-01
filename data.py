@@ -316,7 +316,7 @@ class MRIDataset(Dataset):
 class MRIDatasetImage(MRIDataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, caps_directory, data_file,
+    def __init__(self, caps_directory, data_df,
                  preprocessing='t1-linear', train_transformations=None,
                  labels=True, all_transformations=None, multi_cohort=False):
         """
@@ -331,7 +331,7 @@ class MRIDatasetImage(MRIDataset):
         """
         self.elem_index = None
         self.mode = "image"
-        super().__init__(caps_directory, data_file, preprocessing,
+        super().__init__(caps_directory, data_df, preprocessing,
                          augmentation_transformations=train_transformations, labels=labels,
                          transformations=all_transformations, multi_cohort=multi_cohort)
 

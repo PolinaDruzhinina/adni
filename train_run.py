@@ -19,10 +19,9 @@ import wandb
 parser = argparse.ArgumentParser()
 parser.add_argument('--project_name', help='project name for W&B', type=str, default='ADNI')
 parser.add_argument('--output_dir', help='path to output dir', type=str, default='/home/ADNI/image_cnn')
-parser.add_argument('--input_dir', help='path to input dir', type=str, default='/data/adni/ADNI1/caps')
-parser.add_argument('--tsv_path', help='path', type=str, default='/data/adni/ADNI1/labels_lists_new/train')
-parser.add_argument('--transfer_learning_path', help='transfer_learning_path', type=str, default='/data/adni/ADNI1'
-                                                                                                 '/results'
+parser.add_argument('--input_dir', help='path to input dir', type=str, default='/data/caps')
+parser.add_argument('--tsv_path', help='path', type=str, default='/data/labels_lists_new/train')
+parser.add_argument('--transfer_learning_path', help='transfer_learning_path', type=str, default='/data/results'
                                                                                                  '/image_autoencoder')
 parser.add_argument("--diagnoses", help="Labels that must be extracted from merged_tsv.",
                     nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
@@ -36,7 +35,7 @@ parser.add_argument('--preprocessing', help='Defines the type of preprocessing o
 parser.add_argument('-b', '--batch_size', default=2, type=int, help='Batch size for training')
 parser.add_argument('--num_workers', default=0, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--gpu', default=True, type=bool, help='Use cuda to train model')
-parser.add_argument('--lr', '--learning_rate', default=1e-4, type=float, help='initial learning rate')
+parser.add_argument('--learning_rate', default=1e-4, type=float, help='initial learning rate')
 parser.add_argument('--dropout', default=0.5, type=float, help='initial dropout')
 parser.add_argument('--epochs', default=20, type=int, help='max epoch for training')
 parser.add_argument('--save_folder', default='img/', help='Location to save checkpoint models')
@@ -47,7 +46,7 @@ parser.add_argument('--mode_task', help='transfer learning from model', type=str
 parser.add_argument('--weight_decay', default=1e-4, type=float, help='Weight decay')
 parser.add_argument('--momentum', default=0.999, type=float, help='momentum')
 parser.add_argument('--tolerance', default=0.0, type=float, help='tolerance')
-parser.add_argument('--patience', default=0, type=float, help='patience')
+parser.add_argument('--patience', default=5, type=float, help='patience')
 parser.add_argument('--accumulation_steps', default=1, type=int, help='Accumulates gradients during the given '
                                                                       'number of iterations before performing the '
                                                                       'weight update in order to virtually increase '
@@ -93,6 +92,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
     if logger is None:
         logger = logging
+    wandb.watch(model, criterion, log = "all", log_freq=5)
 
     columns = ['epoch', 'iteration', 'time',
                'balanced_accuracy_train', 'loss_train',
@@ -132,7 +132,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
     while epoch < options.epochs and not early_stopping.step(mean_loss_valid):
         logger.info("Beginning epoch %i." % epoch)
-
+        
+        print(epoch) 
         model.zero_grad()
         evaluation_flag = True
         step_flag = True
@@ -140,14 +141,16 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         total_time = 0
 
         for i, data in enumerate(train_loader, 0):
+            print(i)
             t0 = time()
             total_time = total_time + t0 - tend
             if options.gpu:
                 imgs, labels = data['image'].cuda(), data['label'].cuda()
             else:
                 imgs, labels = data['image'], data['label']
-
+            
             train_output = model(imgs)
+            
             loss = criterion(train_output, labels)
 
             # Back propagation
@@ -156,6 +159,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
             del imgs, labels
 
             if (i + 1) % options.accumulation_steps == 0:
+              
                 step_flag = False
                 optimizer.step()
                 optimizer.zero_grad()
@@ -165,7 +169,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                 # Evaluate the model only when no gradients are accumulated
                 if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
                     evaluation_flag = False
-
+                    
                     _, results_train = test(model, train_loader, options.gpu, criterion)
                     mean_loss_train = results_train["total_loss"] / (len(train_loader) * train_loader.batch_size)
 
@@ -175,9 +179,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     train_loader.dataset.train()
 
                     global_step = i + epoch * len(train_loader)
-                    wandb.log({"train": ['balanced_accuracy': results_train["balanced_accuracy"], 'loss': mean_loss_train],
-                    "test": ['balanced_accuracy': results_valid[
-                                                      "balanced_accuracy"], 'loss': mean_loss_valid]}, step = global_step)
+                    wandb.log({"train": {"epoch": epoch, 'balanced_accuracy': results_train["balanced_accuracy"], 'loss': mean_loss_train},
+                    "test": {'balanced_accuracy': results_valid[
+                                                      "balanced_accuracy"], 'loss': mean_loss_valid}}, step = global_step)
 
                     logger.info("%s level training accuracy is %f at the end of iteration %d"
                                 % (options.mode, results_train["balanced_accuracy"], i))
@@ -196,6 +200,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                         row_df.to_csv(f, header=False, index=False, sep='\t')
 
             tend = time()
+            break
         logger.debug('Mean time per batch loading: %.10f s'
                      % (total_time / len(train_loader) * train_loader.batch_size))
 
@@ -207,7 +212,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         # Always test the results and save them once at the end of the epoch
         model.zero_grad()
         logger.debug('Last checkpoint at the end of the epoch %d' % epoch)
-
+        
         _, results_train = test(model, train_loader, options.gpu, criterion)
         mean_loss_train = results_train["total_loss"] / (len(train_loader) * train_loader.batch_size)
 
@@ -217,8 +222,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         train_loader.dataset.train()
 
         global_step = (epoch + 1) * len(train_loader)
-        wandb.log({"train": ['balanced_accuracy': results_train["balanced_accuracy"], 'loss': mean_loss_train],
-        "test": ['balanced_accuracy': results_valid["balanced_accuracy"],'loss' : mean_loss_valid]}, step = global_step)
+        wandb.log({"train": {'epoch': epoch, 'balanced_accuracy': results_train["balanced_accuracy"], 'loss': mean_loss_train},
+            "test": {'epoch': epoch, 'balanced_accuracy': results_valid["balanced_accuracy"],'loss' : mean_loss_valid}}, step = global_step)
 
         logger.info("%s level training accuracy is %f at the end of iteration %d"
                     % (options.mode, results_train["balanced_accuracy"], len(train_loader)))
@@ -250,30 +255,33 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         # Save optimizer state_dict to be able to reload
         save_checkpoint({'optimizer': optimizer.state_dict(),
                          'epoch': epoch,
-                         'name': options.optimizer,
+                         'name': 'Adam',
                          },
                         False, False,
                         model_dir,
                         filename='optimizer.pth.tar')
 
         epoch += 1
-
+        break
     os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
     os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
 
 
-def train_single_cnn(params):
-    main_logger = return_logger(params.verbose, "main process")
-    train_logger = return_logger(params.verbose, "train")
-    eval_logger = return_logger(params.verbose, "final evaluation")
-    check_and_clean(params.output_dir)
-    train_transforms, all_transforms = get_transforms(params.mode,
-                                                      minmaxnormalization=params.minmaxnormalization,
-                                                      data_augmentation=params.data_augmentation)
-    fold_iterator = range(params.n_splits)
+def train_single_cnn(args):
+
+    main_logger = return_logger(args.verbose, "main process")
+    train_logger = return_logger(args.verbose, "train")
+    eval_logger = return_logger(args.verbose, "final evaluation")
+    check_and_clean(args.output_dir)
+    train_transforms, all_transforms = get_transforms(args.mode,
+                                                      minmaxnormalization=args.minmaxnormalization,
+                                                      data_augmentation=args.data_augmentation)
+    fold_iterator = range(args.n_splits)
     for fi in fold_iterator:
         print("Fold %i" % fi)
-
+        wandb.init(project=args.project_name, group="adni_baseline_kf" + str(fi), reinit=True)
+        wandb.config.update(args)
+        params = wandb.config
         training_df, valid_df = load_data(params.tsv_path, params.diagnoses, fi, n_splits=params.n_splits,
                                           baseline=params.baseline, logger=main_logger)
 
@@ -284,7 +292,7 @@ def train_single_cnn(params):
                                      train_transformations=train_transforms, all_transformations=all_transforms,
                                      labels=True)
 
-        train_sampler = generate_sampler(data_train, params.sampler)
+        train_sampler = generate_sampler(data_train)
 
         train_loader = DataLoader(data_train, batch_size=params.batch_size, sampler=train_sampler,
                                   num_workers=params.num_workers, pin_memory=True)
@@ -300,11 +308,14 @@ def train_single_cnn(params):
         else:
             model.cpu()
         if params.autoencoder:
+            
             model = AutoEncoder(model)
-
+            
         if params.mode_task == "autoencoder":
+            
             main_logger.info("A pretrained autoencoder is loaded at path %s" % params.transfer_learning_path)
             model = transfer_autoencoder_weights(model, params.transfer_learning_path, fi)
+            
 
         else:
             main_logger.info("A pretrained CNN is loaded at path %s" % params.transfer_learning_path)
@@ -325,24 +336,20 @@ def train_single_cnn(params):
         log_dir = os.path.join(
             params.output_dir, 'fold-%i' % fi, 'logs')
         model_dir = os.path.join(
-            params.output_dir, 'fold-%i' % fi, 'models')
+                params.output_dir, 'fold-%i' % fi, 'models')
 
         main_logger.debug('Beginning the training task')
         train(model, train_loader, valid_loader, criterion,
               optimizer, False, log_dir, model_dir, params, train_logger)
 
         test_single_cnn(model, params.output_dir, train_loader, "train",
-                        fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
+                        fi, criterion, params.mode, eval_logger, selection_threshold=None, gpu=params.gpu)
         test_single_cnn(model, params.output_dir, valid_loader, "validation",
-                        fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
-
+                        fi, criterion, params.mode, eval_logger, selection_threshold=None, gpu=params.gpu)
+        wandb.finish()
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    run = wandb.init(project=args.project_name, reinit=True)
-    wandb.config(args)
-    if args.mode == 'train':
-        train_single_cnn(params=wandb.config)
 
-    run.finish()
+    train_single_cnn(args)

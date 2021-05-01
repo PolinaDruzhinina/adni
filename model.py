@@ -1,4 +1,4 @@
-PadMaxPool3d, Flatten
+
 import torch.nn as nn
 import torch
 from copy import deepcopy
@@ -83,25 +83,25 @@ class Conv5_FC3(nn.Module):
             nn.Linear(50, 2)
 
         )
-
+        self.gradients = None
         self.flattened_shape = [-1, 128, 6, 7, 6]
 
     def activations_hook(self, grad):
         self.gradients = grad
+
+    def forward(self, x):
+        x = self.features(x)
+        if self.train and x.requires_grad:
+            h = x.register_hook(self.activations_hook)
+        x = self.classifier(x)
+
+        return x
 
     def get_activations_gradient(self):
         return self.gradients
 
     def get_activations(self, x):
         return self.features(x)
-
-    def forward(self, x):
-        x = self.features(x)
-        h = x.register_hook(self.activations_hook)
-        x = self.classifier(x)
-
-        return x
-
 
 class PadMaxPool3d(nn.Module):
     def __init__(self, kernel_size, stride, return_indices=False, return_pad=False):

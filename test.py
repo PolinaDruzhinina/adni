@@ -161,9 +161,10 @@ def test_single_cnn(model, output_dir, data_loader, subset_name, split, criterio
                     % (mode, subset_name, metrics["balanced_accuracy"], selection))
 
         mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, mode, dataset=subset_name)
-
+        print('presoft_voting')
         # Soft voting
         if data_loader.dataset.elem_per_image > 1:
+            print('soft_voting')
             soft_voting_to_tsvs(output_dir, split, logger=logger, selection=selection, mode=mode,
                                 dataset=subset_name, selection_threshold=selection_threshold)
 
