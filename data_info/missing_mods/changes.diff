@@ -1,0 +1,72 @@
+3,4c3,4
+< Sessions available: ['ses-M00', 'ses-M06', 'ses-M12', 'ses-M18', 'ses-M24', 'ses-M36', 'ses-M42', 'ses-M48', 'ses-M60']
+< Number of sessions ses-M00 found: 738 (90.88669950738917%)
+---
+> Sessions available: ses-M36
+> Number of sessions ses-M36 found: 366 (45.073891625615765%)
+5a6,7
+> Number of sessions ses-M24 found: 567 (69.82758620689656%)
+> Number of sessions ses-M48 found: 93 (11.45320197044335%)
+6a9
+> Number of sessions ses-M00 found: 738 (90.88669950738917%)
+8,9d10
+< Number of sessions ses-M24 found: 567 (69.82758620689656%)
+< Number of sessions ses-M36 found: 366 (45.073891625615765%)
+11d11
+< Number of sessions ses-M48 found: 93 (11.45320197044335%)
+17c17
+< ses-M00
+---
+> ses-M36
+19c19
+< real: 738 (100.0%) 
+---
+> real: 366 (100.0%) 
+27c27
+< ses-M12
+---
+> ses-M24
+29c29
+< real: 641 (100.0%) 
+---
+> real: 567 (100.0%) 
+32c32
+< ses-M18
+---
+> ses-M48
+34c34
+< real: 281 (100.0%) 
+---
+> real: 93 (100.0%) 
+37c37
+< ses-M24
+---
+> ses-M12
+39c39
+< real: 567 (100.0%) 
+---
+> real: 641 (100.0%) 
+42c42
+< ses-M36
+---
+> ses-M00
+44c44
+< real: 366 (100.0%) 
+---
+> real: 738 (100.0%) 
+47c47
+< ses-M42
+---
+> ses-M18
+49c49
+< real: 1 (100.0%) 
+---
+> real: 281 (100.0%) 
+52c52
+< ses-M48
+---
+> ses-M42
+54c54
+< real: 93 (100.0%) 
+---
+> real: 1 (100.0%) 

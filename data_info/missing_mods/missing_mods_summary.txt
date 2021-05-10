@@ -1,0 +1,60 @@
+**********************************************
+Number of subjects converted: 812
+Sessions available: ['ses-M00', 'ses-M06', 'ses-M12', 'ses-M18', 'ses-M24', 'ses-M36', 'ses-M42', 'ses-M48', 'ses-M60']
+Number of sessions ses-M00 found: 738 (90.88669950738917%)
+Number of sessions ses-M06 found: 664 (81.77339901477832%)
+Number of sessions ses-M12 found: 641 (78.94088669950739%)
+Number of sessions ses-M18 found: 281 (34.60591133004926%)
+Number of sessions ses-M24 found: 567 (69.82758620689656%)
+Number of sessions ses-M36 found: 366 (45.073891625615765%)
+Number of sessions ses-M42 found: 1 (0.12315270935960591%)
+Number of sessions ses-M48 found: 93 (11.45320197044335%)
+Number of sessions ses-M60 found: 1 (0.12315270935960591%)
+**********************************************
+
+Number of missing modalities for each session:
+
+ses-M00
+t1w: 0 (0.0%) 
+real: 738 (100.0%) 
+1: 0 (0.0%) 
+
+ses-M06
+t1w: 0 (0.0%) 
+real: 664 (100.0%) 
+1: 0 (0.0%) 
+
+ses-M12
+t1w: 0 (0.0%) 
+real: 641 (100.0%) 
+1: 0 (0.0%) 
+
+ses-M18
+t1w: 0 (0.0%) 
+real: 281 (100.0%) 
+1: 0 (0.0%) 
+
+ses-M24
+t1w: 0 (0.0%) 
+real: 567 (100.0%) 
+1: 0 (0.0%) 
+
+ses-M36
+t1w: 0 (0.0%) 
+real: 366 (100.0%) 
+1: 0 (0.0%) 
+
+ses-M42
+t1w: 0 (0.0%) 
+real: 1 (100.0%) 
+1: 0 (0.0%) 
+
+ses-M48
+t1w: 0 (0.0%) 
+real: 93 (100.0%) 
+1: 0 (0.0%) 
+
+ses-M60
+t1w: 0 (0.0%) 
+real: 1 (100.0%) 
+1: 0 (0.0%) 
