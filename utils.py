@@ -80,3 +80,28 @@ class EarlyStopping(object):
             self.is_better = lambda a, best: a < best - best * min_delta
         if mode == 'max':
             self.is_better = lambda a, best: a > best + best * min_delta
+
+
+def display_table(table_path):
+    """Custom function to display the clinicadl tsvtool analysis output"""
+    import pandas as pd
+    from IPython.display import display
+
+    OASIS_analysis_df = pd.read_csv(table_path, sep='\t')
+    OASIS_analysis_df.set_index("diagnosis", drop=True, inplace=True)
+    columns = ["n_subjects", "n_scans",
+               "mean_age", "std_age", "min_age", "max_age",
+               "sexF", "sexM",
+               "mean_MMSE", "std_MMSE", "min_MMSE", "max_MMSE",
+               "CDR_0", "CDR_0.5", "CDR_1", "CDR_2", "CDR_3"]
+
+    # Print formatted table
+    format_columns = ["subjects", "scans", "age", "sex", "MMSE", "CDR"]
+    format_df = pd.DataFrame(index=OASIS_analysis_df.index, columns=format_columns)
+    for idx in OASIS_analysis_df.index.values:
+        row_str = "%i; %i; %.1f ± %.1f [%.1f, %.1f]; %iF / %iM; %.1f ± %.1f [%.1f, %.1f]; 0: %i, 0.5: %i, 1: %i, 2:%i, 3:%i" % tuple([OASIS_analysis_df.loc[idx, col] for col in columns])
+        row_list = row_str.split(';')
+        format_df.loc[idx] = row_list
+
+    format_df.index.name = None
+    display(format_df)

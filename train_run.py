@@ -18,13 +18,14 @@ import wandb
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--project_name', help='project name for W&B', type=str, default='ADNI')
-parser.add_argument('--output_dir', help='path to output dir', type=str, default='/home/ADNI/image_cnn')
+parser.add_argument('--output_dir', help='path to output dir', type=str, default='/home/ADNI/image_cnn_mci_cn')
 parser.add_argument('--input_dir', help='path to input dir', type=str, default='/data/caps')
-parser.add_argument('--tsv_path', help='path', type=str, default='/data/labels_lists_new/train')
-parser.add_argument('--transfer_learning_path', help='transfer_learning_path', type=str, default='/data/results'
-                                                                                                 '/image_autoencoder')
+parser.add_argument('--tsv_path', help='path', type=str, default='/home/ADNI/data_info/labels_lists_new/train')
+parser.add_argument('--transfer_learning_path', help='transfer_learning_path', type=str, default=None)
+#parser.add_argument('--transfer_learning_path', help='transfer_learning_path', type=str, default='/data/results'
+#                                                                                                 '/image_autoencoder')
 parser.add_argument("--diagnoses", help="Labels that must be extracted from merged_tsv.",
-                    nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
+                    nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['MCI', 'CN'])
 parser.add_argument("--baseline", action="store_true", default=False,
                     help="If provided, only the baseline sessions are used for training.")
 parser.add_argument('--n_splits', default=5, type=int, help='n splits for training')
@@ -32,9 +33,10 @@ parser.add_argument('--preprocessing', help='Defines the type of preprocessing o
                     choices=['t1-linear', 't1-extensive', 't1-volume'], type=str, default='t1-linear')
 # parser.add_argument('--prepare_dl', help='''If True the extract slices or patche are used, otherwise the they
 #                 will be extracted on the fly (if necessary).''', default=False, action="store_true")
-parser.add_argument('-b', '--batch_size', default=2, type=int, help='Batch size for training')
+parser.add_argument('-b', '--batch_size', default=4, type=int, help='Batch size for training')
 parser.add_argument('--num_workers', default=0, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--gpu', default=True, type=bool, help='Use cuda to train model')
+parser.add_argument('--id_gpu', default=3, type=int, help="Id of gpu device")
 parser.add_argument('--learning_rate', default=1e-4, type=float, help='initial learning rate')
 parser.add_argument('--dropout', default=0.5, type=float, help='initial dropout')
 parser.add_argument('--epochs', default=20, type=int, help='max epoch for training')
@@ -45,7 +47,7 @@ parser.add_argument('--tl_selection', help='transfer learning selection', type=s
 parser.add_argument('--mode_task', help='transfer learning from model', type=str, default='autoencoder')
 parser.add_argument('--weight_decay', default=1e-4, type=float, help='Weight decay')
 parser.add_argument('--momentum', default=0.999, type=float, help='momentum')
-parser.add_argument('--tolerance', default=0.0, type=float, help='tolerance')
+parser.add_argument('--tolerance', default=0, type=float, help='tolerance')
 parser.add_argument('--patience', default=5, type=float, help='patience')
 parser.add_argument('--accumulation_steps', default=1, type=int, help='Accumulates gradients during the given '
                                                                       'number of iterations before performing the '
@@ -141,7 +143,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         total_time = 0
 
         for i, data in enumerate(train_loader, 0):
-            print(i)
+            
             t0 = time()
             total_time = total_time + t0 - tend
             if options.gpu:
@@ -200,7 +202,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                         row_df.to_csv(f, header=False, index=False, sep='\t')
 
             tend = time()
-            break
+           
         logger.debug('Mean time per batch loading: %.10f s'
                      % (total_time / len(train_loader) * train_loader.batch_size))
 
@@ -262,7 +264,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                         filename='optimizer.pth.tar')
 
         epoch += 1
-        break
+        
     os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
     os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
 
@@ -279,7 +281,7 @@ def train_single_cnn(args):
     fold_iterator = range(args.n_splits)
     for fi in fold_iterator:
         print("Fold %i" % fi)
-        wandb.init(project=args.project_name, group="adni_baseline_kf" + str(fi), reinit=True)
+        wandb.init(project=args.project_name, group="adni_mci_cn_kf5", job_type='Kfold_' + str(fi), reinit=True)
         wandb.config.update(args)
         params = wandb.config
         training_df, valid_df = load_data(params.tsv_path, params.diagnoses, fi, n_splits=params.n_splits,
@@ -302,6 +304,9 @@ def train_single_cnn(args):
 
         # Initialize the model
         main_logger.info('Initialization of the model')
+        if params.id_gpu is not None:
+            torch.cuda.set_device(params.id_gpu)
+
         model = eval(params.model)(dropout=params.dropout)
         if params.gpu:
             model.cuda()
@@ -311,17 +316,23 @@ def train_single_cnn(args):
             
             model = AutoEncoder(model)
             
-        if params.mode_task == "autoencoder":
+        if params.transfer_learning_path is not None:
+        
+        
+            if params.mode_task == "autoencoder":
             
-            main_logger.info("A pretrained autoencoder is loaded at path %s" % params.transfer_learning_path)
-            model = transfer_autoencoder_weights(model, params.transfer_learning_path, fi)
+                main_logger.info("A pretrained autoencoder is loaded at path %s" % params.transfer_learning_path)
+                model = transfer_autoencoder_weights(model, params.transfer_learning_path, fi)
             
 
-        else:
-            main_logger.info("A pretrained CNN is loaded at path %s" % params.transfer_learning_path)
-            model = transfer_cnn_weights(model, params.transfer_learning_path, fi, selection=params.tl_selection,
+            else:
+                main_logger.info("A pretrained CNN is loaded at path %s" % params.transfer_learning_path)
+                model = transfer_cnn_weights(model, params.transfer_learning_path, fi, selection=params.tl_selection,
                                          cnn_index=None)
+        else:
+            main_logger.info("The model is trained from scratch")
 
+            
         if params.gpu:
             model.cuda()
         else:
@@ -353,3 +364,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     train_single_cnn(args)
+
