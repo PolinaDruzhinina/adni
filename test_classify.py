@@ -1,4 +1,5 @@
 import os
+from os import path
 import sys
 import torch
 import argparse
@@ -58,8 +59,25 @@ if __name__ == '__main__':
 
     fold_iterator = range(args.n_splits)
     for fi in fold_iterator:
-        test_df = load_data(args.tsv_path_test, args.diagnoses, fi, n_splits=args.n_splits,
-                                      baseline=args.baseline, logger=test_logger)
+        if test_logger is None:
+            logger = test_logger
+
+        test_df = pd.DataFrame()
+
+        test_path = path.join(args.tsv_path_test, 'test')
+
+        logger.debug("Train path %s" % test_path)
+
+        for diagnosis in args.diagnoses:
+            test_diagnosis_path = path.join(
+                test_path, diagnosis + '_baseline.tsv')
+
+            test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
+
+            test_df = pd.concat([test_df, test_diagnosis_df])
+
+        test_df.reset_index(inplace=True, drop=True)
+        test_df["cohort"] = "single"
 
         data_test = MRIDatasetImage(args.input_dir, data_df=test_df, preprocessing=args.preprocessing,
                                  train_transformations=train_transforms, all_transformations=all_transforms,
