@@ -6,6 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
+*.swp
+*.gz
+getlabels_result/
+image_cnn/
+image_cnn_from_scratch/
+image_cnn_from_scratch_toler_0_bs4/
+image_cnn_mci_cn/
+wandb/
+        
 # Distribution / packaging
 .Python
 .idea/
