@@ -20,7 +20,7 @@ from test import  test_single_cnn
 parser = argparse.ArgumentParser()
 parser.add_argument('--output_dir', help='path to output dir', type=str, default='/home/ADNI/image_cnn')
 parser.add_argument('--input_dir', help='path to input dir', type=str, default='/data/caps')
-parser.add_argument('--tsv_path_test', help='path', type=str, default='/home/ADNI/data_info/labels_lists_new/test')
+parser.add_argument('--tsv_path_test', help='path', type=str, default='/home/ADNI/data_info/labels_lists_new')
 parser.add_argument("--diagnoses", help="Labels that must be extracted from merged_tsv.",
                     nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
 parser.add_argument("--baseline", action="store_true", default=False,
@@ -60,13 +60,13 @@ if __name__ == '__main__':
     fold_iterator = range(args.n_splits)
     for fi in fold_iterator:
         if test_logger is None:
-            logger = test_logger
+            test_logger = test_logger
 
         test_df = pd.DataFrame()
 
         test_path = path.join(args.tsv_path_test, 'test')
 
-        logger.debug("Train path %s" % test_path)
+        test_logger.debug("Test path %s" % test_path)
 
         for diagnosis in args.diagnoses:
             test_diagnosis_path = path.join(
