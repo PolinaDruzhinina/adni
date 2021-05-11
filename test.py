@@ -116,8 +116,8 @@ def evaluate_prediction(y, y_pred):
     else:
         npv = 0.0
 
-    roc_auc = (1 + true_positive - false_positive)/2 * 100
-    balanced_accuracy = (sensitivity + specificity) / 2*100
+    roc_auc = ((1 + true_positive - false_positive)/2 )* 100
+    balanced_accuracy = ((sensitivity + specificity) / 2) * 100
 
     results = {'accuracy': round(accuracy,3),
                'balanced_accuracy': round(balanced_accuracy,3),
