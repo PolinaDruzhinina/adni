@@ -99,7 +99,7 @@ if __name__ == '__main__':
                                      num_workers=args.num_workers, pin_memory=True)
             print(data_test.size)
             get_masks(model.module, test_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
-                                   size=data_test.size)
+                                   size=data_test.size, task = args.task)
             # np.save(os.path.join(CHECKPOINTS_DIR, 'masks_grad_cam_part1_for_labels_0'), masks_grad)
         elif args.task == 'train/val':
 
@@ -123,6 +123,6 @@ if __name__ == '__main__':
 
             print(data_train.size)
             get_masks(model.module, train_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
-                                   size=data_train.size)
+                                   size=data_train.size,task = args.task)
             get_masks(model.module, valid_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
-                      size=data_valid.size)
+                      size=data_valid.size, task = args.task)

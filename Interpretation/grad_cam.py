@@ -47,9 +47,9 @@ class AttentionMap():
         return np.concatenate(attention, axis=0)
 
 
-def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad_cam', size=(180, 180, 180), save_binary=None):
+def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad_cam', size=(180, 180, 180), task = 'test', save_binary=None):
     masks = []
-    mask_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask')
+    mask_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask_' % task)
     os.makedirs(mask_dir, exist_ok=True)
     for i, data in enumerate(loader, 0):
         image = data['image'].cuda()
