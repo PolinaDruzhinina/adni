@@ -7,6 +7,7 @@ import pandas as pd
 from time import time
 import logging
 import shutil
+from sklearn.metrics import roc_auc_score
 from model import load_model
 
 def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
@@ -117,7 +118,8 @@ def evaluate_prediction(y, y_pred):
         npv = 0.0
 
     roc_auc = ((1 + true_positive - false_positive)/2 )
-    balanced_accuracy = ((sensitivity + specificity) / 2) 
+    roc_auc_sk = roc_auc_score(y, y_pred)
+    balanced_accuracy = ((sensitivity + specificity) / 2)
 
     results = {'accuracy': round(accuracy,3),
                'balanced_accuracy': round(balanced_accuracy,3),
@@ -126,6 +128,7 @@ def evaluate_prediction(y, y_pred):
                'ppv': round(ppv,3),
                'npv': round(npv,3),
                'roc_auc' : round(roc_auc, 3)
+               'roc_auc_sk': round(roc_auc_sk, 3)
                }
 
     return results
