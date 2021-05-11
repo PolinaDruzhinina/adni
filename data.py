@@ -1,3 +1,5 @@
+"""The project is inspired by the clinica /clinicadl library, the code is taken from https://github.com/aramis-lab/AD-DL"""
+
 import torch
 import pandas as pd
 import numpy as np

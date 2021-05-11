@@ -1,4 +1,7 @@
 # coding: utf8
+
+"""The project is inspired by the clinica /clinicadl library, the code is taken from https://github.com/aramis-lab/AD-DL"""
+
 import logging
 import sys
 
@@ -80,6 +83,52 @@ class EarlyStopping(object):
             self.is_better = lambda a, best: a < best - best * min_delta
         if mode == 'max':
             self.is_better = lambda a, best: a > best + best * min_delta
+def commandline_to_json(commandline, logger=None, filename="commandline.json"):
+    """
+    This is a function to write the python argparse object into a json file.
+    This helps for DL when searching for hyperparameters
+    Args:
+        commandline: (Namespace or dict) the output of `parser.parse_known_args()`
+        logger: (logging object) writer to stdout and stderr
+        filename: (str) name of the JSON file.
+    :return:
+    """
+    if logger is None:
+        logger = logging
+
+    import json
+    import os
+    from copy import copy
+
+    if isinstance(commandline, dict):
+        commandline_arg_dict = copy(commandline)
+    else:
+        commandline_arg_dict = copy(vars(commandline))
+    output_dir = commandline_arg_dict['output_dir']
+    os.makedirs(output_dir, exist_ok=True)
+
+    # remove these entries from the commandline log file
+    if 'func' in commandline_arg_dict:
+        del commandline_arg_dict['func']
+
+    if 'output_dir' in commandline_arg_dict:
+        del commandline_arg_dict['output_dir']
+
+    if 'launch_dir' in commandline_arg_dict:
+        del commandline_arg_dict['launch_dir']
+
+    if 'name' in commandline_arg_dict:
+        del commandline_arg_dict['name']
+
+    if 'verbose' in commandline_arg_dict:
+        del commandline_arg_dict['verbose']
+
+    # save to json file
+    json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
+    logger.info("Path of json file: %s" % os.path.join(output_dir, "commandline.json"))
+    f = open(os.path.join(output_dir, filename), "w")
+    f.write(json)
+    f.close()
 
 
 def display_table(table_path):

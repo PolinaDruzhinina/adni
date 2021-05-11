@@ -1,3 +1,5 @@
+"""The project is inspired by the clinica /clinicadl library, the code is taken from https://github.com/aramis-lab/AD-DL"""
+
 import os
 import sys
 import torch
@@ -12,7 +14,7 @@ from torch.utils.data import DataLoader
 
 from model import AutoEncoder, Conv5_FC3, transfer_autoencoder_weights, transfer_cnn_weights
 from data import load_data, generate_sampler, get_transforms, MRIDatasetImage
-from utils import return_logger, EarlyStopping
+from utils import return_logger, EarlyStopping, commandline_to_json
 from test import test, save_checkpoint, test_single_cnn
 import wandb
 
@@ -275,6 +277,8 @@ def train_single_cnn(args):
     train_logger = return_logger(args.verbose, "train")
     eval_logger = return_logger(args.verbose, "final evaluation")
     check_and_clean(args.output_dir)
+    commandline_to_json(args, logger=main_logger)
+
     train_transforms, all_transforms = get_transforms(args.mode,
                                                       minmaxnormalization=args.minmaxnormalization,
                                                       data_augmentation=args.data_augmentation)

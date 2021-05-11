@@ -1,4 +1,6 @@
 
+"""The project is inspired by the clinica /clinicadl library, the code is taken from https://github.com/aramis-lab/AD-DL"""
+
 import torch.nn as nn
 import torch
 from copy import deepcopy

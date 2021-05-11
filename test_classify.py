@@ -1,13 +1,10 @@
-import os
+"""The project is inspired by the clinica /clinicadl library, the code is taken from https://github.com/aramis-lab/AD-DL"""
+
 from os import path
 import sys
 import torch
 import argparse
-import shutil
-import logging
-from time import time
 import pandas as pd
-import numpy as np
 
 from torch.utils.data import DataLoader
 

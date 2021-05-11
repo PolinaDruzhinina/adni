@@ -1,15 +1,12 @@
+"""The project is inspired by the clinica /clinicadl library, the code is taken from https://github.com/aramis-lab/AD-DL"""
+
 import torch
 import numpy as np
 import os
-import warnings
 import pandas as pd
 from time import time
 import logging
 import shutil
-from torch.nn.modules.loss import _Loss
-import torch.nn.functional as F
-from sklearn.utils import column_or_1d
-import scipy.sparse as sp
 from model import load_model
 
 def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
@@ -97,36 +94,38 @@ def evaluate_prediction(y, y_pred):
     false_positive = np.sum((y_pred == 1) & (y == 0))
     false_negative = np.sum((y_pred == 0) & (y == 1))
 
-    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
+    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)*100
 
     if (true_positive + false_negative) != 0:
-        sensitivity = true_positive / (true_positive + false_negative)
+        sensitivity = true_positive / (true_positive + false_negative)*100
     else:
         sensitivity = 0.0
 
     if (false_positive + true_negative) != 0:
-        specificity = true_negative / (false_positive + true_negative)
+        specificity = true_negative / (false_positive + true_negative)*100
     else:
         specificity = 0.0
 
     if (true_positive + false_positive) != 0:
-        ppv = true_positive / (true_positive + false_positive)
+        ppv = true_positive / (true_positive + false_positive)*100
     else:
         ppv = 0.0
 
     if (true_negative + false_negative) != 0:
-        npv = true_negative / (true_negative + false_negative)
+        npv = true_negative / (true_negative + false_negative)*100
     else:
         npv = 0.0
 
-    balanced_accuracy = (sensitivity + specificity) / 2
+    roc_auc = (1 + true_positive - false_positive)/2 * 100
+    balanced_accuracy = (sensitivity + specificity) / 2*100
 
-    results = {'accuracy': accuracy,
-               'balanced_accuracy': balanced_accuracy,
-               'sensitivity': sensitivity,
-               'specificity': specificity,
-               'ppv': ppv,
-               'npv': npv,
+    results = {'accuracy': round(accuracy,3),
+               'balanced_accuracy': round(balanced_accuracy,3),
+               'sensitivity': round(sensitivity,3),
+               'specificity': round(specificity,3),
+               'ppv': round(ppv,3),
+               'npv': round(npv,3),
+               'roc_auc' : round(roc_auc, 3)
                }
 
     return results
