@@ -8,10 +8,10 @@ import pandas as pd
 
 from torch.utils.data import DataLoader
 
-from ..data import load_data, get_transforms, MRIDatasetImage, generate_sampler
-from ..model import Conv5_FC3
-from ..utils import return_logger
-from .grad_cam import get_masks
+from data import load_data, get_transforms, MRIDatasetImage, generate_sampler
+from model import Conv5_FC3
+from utils import return_logger
+from Interpretation.grad_cam import get_masks
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output_dir', help='path to output dir', type=str, default='/home/ADNI/image_cnn')
