@@ -8,10 +8,9 @@ import pandas as pd
 
 from torch.utils.data import DataLoader
 
-from model import Conv5_FC3
-from data import load_data, get_transforms, MRIDatasetImage, generate_sampler
-from utils import return_logger
-from test import test_single_cnn
+from ..model import Conv5_FC3
+from ..data import load_data, get_transforms, MRIDatasetImage, generate_sampler
+from ..utils import return_logger
 from Interpretation.grad_cam import get_masks
 
 parser = argparse.ArgumentParser()
