@@ -127,7 +127,7 @@ def evaluate_prediction(y, y_pred):
                'specificity': round(specificity,3),
                'ppv': round(ppv,3),
                'npv': round(npv,3),
-               'roc_auc' : round(roc_auc, 3)
+               'roc_auc' : round(roc_auc, 3),
                'roc_auc_sk': round(roc_auc_sk, 3)
                }
 
