@@ -20,6 +20,7 @@ import wandb
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--project_name', help='project name for W&B', type=str, default='ADNI')
+parser.add_argument('--group_name', help='group name for W&B', type=str, default='ADNI_pMCI/CN')
 parser.add_argument('--output_dir', help='path to output dir', type=str, default='/home/ADNI/image_cnn_mci_cn')
 parser.add_argument('--input_dir', help='path to input dir', type=str, default='/data/caps')
 parser.add_argument('--tsv_path', help='path', type=str, default='/home/ADNI/data_info/labels_lists_new/train')
@@ -285,7 +286,7 @@ def train_single_cnn(args):
     fold_iterator = range(args.n_splits)
     for fi in fold_iterator:
         print("Fold %i" % fi)
-        wandb.init(project=args.project_name, group="adni_mci_cn_kf5", job_type='Kfold_' + str(fi), reinit=True)
+        wandb.init(project=args.project_name, group=args.group_name, job_type='Kfold_' + str(fi), reinit=True)
         wandb.config.update(args)
         params = wandb.config
         training_df, valid_df = load_data(params.tsv_path, params.diagnoses, fi, n_splits=params.n_splits,
