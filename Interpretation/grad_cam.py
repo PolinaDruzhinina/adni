@@ -1,9 +1,10 @@
+import os
 import torch
 import torch.nn as nn
 import numpy as np
 from tqdm import tqdm
 import torch.nn.functional as F
-
+import nibabel as nib
 
 
 class GuidedBackprop():
@@ -49,16 +50,15 @@ class AttentionMap():
 
 def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad_cam', size=(180, 180, 180), task = 'test', save_binary=None):
     masks = []
-    mask_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask_' % task)
+    labels = []
+    mask_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask_{}'.format(task))
     os.makedirs(mask_dir, exist_ok=True)
     for i, data in enumerate(loader, 0):
         image = data['image'].cuda()
-        #         print(image.shape)
+        labels.append(data['label'].numpy().item())
         logit = model(image)
-        print('logit')
-        print(logit)
         if mask_type == 'grad_cam':
-            logit[:, logit.data.max(1)[1].item()].backward()
+            logit[:, logit.data.max(1)[1]].backward()
             #             logit[:,0].backward()
             activation = model.get_activations(image).detach()
             act_grad = model.get_activations_gradient()
@@ -67,12 +67,13 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             heatmap = torch.sum(activation, dim=1)
             heatmap = F.relu(heatmap)
             heatmap /= torch.max(heatmap)
-            heatmap = F.interpolate(heatmap.unsqueeze(0), size, mode='trilinear', align_corners=False)  # 58 70 58
+            heatmap = F.interpolate(heatmap.unsqueeze(0), size[1:], mode='trilinear', align_corners=False)  # 58 70 58
             masks.append(heatmap.cpu().numpy())
-            name = data._get_path
+            name = data['image_path'][0][-80:-53]
             print(name)
             nib.save(nib.Nifti1Image(heatmap.cpu().numpy(), affine=np.eye(4)),
                      os.path.join(mask_dir, '{}_gradcam_mask.nii.gz'.format(name)))
+
             if save_binary:
                 mask_binary_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask_binary')
                 os.makedirs(mask_dir, exist_ok=True)
@@ -90,18 +91,13 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             raise NotImplementedType('define mask_type')
     if mean_mask:
             concat = np.concatenate(masks, axis=0).squeeze(axis=1)
-            print(data.labels)
-            labels_0 = data.labels = 0
-            print(labels_0)
-            print(len(labels_0))
-            labels_1 = data.labels = 1
-            print(labels_1)
-            print(len(labels_1))
-            mean_0 = concat[labels_0].mean(axis=0)
-            mean_1 = concat[labels_1].mean(axis=0)
+            labels_cn = np.array(labels) == 0
+            labels_ad = np.array(labels) == 1
+            mean_0 = concat[labels_cn].mean(axis=0)
+            mean_1 = concat[labels_ad].mean(axis=0)
             m_dir = os.path.join(output_dir, 'fold-%i' % fold)
-            nib.save(nib.Nifti1Image(mean_0.cpu().numpy(), affine=np.eye(4)),
-                     os.path.join(m_dir, '{}_gradcam_mask_mean_CN.nii.gz'.format(name)))
-            nib.save(nib.Nifti1Image(mean_1.cpu().numpy(), affine=np.eye(4)),
-                     os.path.join(m_dir, '{}_gradcam_mask_mean_1.nii.gz'.format(name)))
+            nib.save(nib.Nifti1Image(mean_0, affine=np.eye(4)),
+                     os.path.join(m_dir, '{}_gradcam_mask_mean_CN_{}.nii.gz'.format(name, task)))
+            nib.save(nib.Nifti1Image(mean_1, affine=np.eye(4)),
+                     os.path.join(m_dir, '{}_gradcam_mask_mean_1_{}.nii.gz'.format(name, task)))
     del image, heatmap, activation, act_grad, pool_act_grad

@@ -76,13 +76,12 @@ if __name__ == '__main__':
 
         if args.task == 'test':
             test_df = pd.DataFrame()
-            test_path = path.join(args.tsv_path_test, 'test')
-
-            logger.debug("Test path %s" % test_path)
+        
+            logger.debug("Test path %s" % args.tsv_path)
 
             for diagnosis in args.diagnoses:
                 test_diagnosis_path = path.join(
-                    test_path, diagnosis + '_baseline.tsv')
+                    args.tsv_path, diagnosis + '_baseline.tsv')
 
                 test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
 
@@ -97,7 +96,7 @@ if __name__ == '__main__':
             test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=False,
                                      num_workers=args.num_workers, pin_memory=True)
             print(data_test.size)
-            get_masks(model.module, test_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
+            get_masks(model, test_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
                                    size=data_test.size, task = args.task)
             # np.save(os.path.join(CHECKPOINTS_DIR, 'masks_grad_cam_part1_for_labels_0'), masks_grad)
         elif args.task == 'train/val':
@@ -125,3 +124,4 @@ if __name__ == '__main__':
                                    size=data_train.size,task = args.task)
             get_masks(model.module, valid_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
                       size=data_valid.size, task = args.task)
+

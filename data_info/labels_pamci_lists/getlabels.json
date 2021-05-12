@@ -1,0 +1,12 @@
+{
+    "merged_tsv": "/data/merged.tsv",
+    "missing_mods": "/data/missing_mods/",
+    "diagnoses": [
+        "pMCI"
+    ],
+    "modality": "t1w",
+    "restriction_path": "/data/caps/QC_result.tsv",
+    "time_horizon": 36,
+    "variables_of_interest": null,
+    "remove_smc": true
+}
