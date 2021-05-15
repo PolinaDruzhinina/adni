@@ -227,7 +227,7 @@ class MRIDataset(Dataset):
         unique_codes = set()
         for diagnosis in unique_diagnoses:
             unique_codes.add(self.diagnosis_code[diagnosis])
-        # if len(unique_codes) == 1:
+        # if len(unique_codes) == 
         #     warnings.warn("The diagnoses found in the DataFrame %s only corresponds to one class %s. "
         #                   "If you want to run a binary classification please change the labels involved."
         #                   % (unique_diagnoses, unique_codes))
