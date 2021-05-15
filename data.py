@@ -124,9 +124,8 @@ def load_data(tsv_path, diagnoses_list,
 
     logger.debug("Train path %s" % train_path)
     logger.debug("Valid path %s" % valid_path)
-
+    
     for diagnosis in diagnoses_list:
-
         if baseline:
             train_diagnosis_path = path.join(
                 train_path, diagnosis + '_baseline.tsv')
@@ -147,7 +146,6 @@ def load_data(tsv_path, diagnoses_list,
 
     train_df["cohort"] = "single"
     valid_df["cohort"] = "single"
-
     return train_df, valid_df
 
 def get_nii_path(caps_dict, participant_id, session_id, cohort, preprocessing):
@@ -366,7 +364,8 @@ def generate_sampler(dataset, sampler_option='random'):
     :return: (Sampler)
     """
     df = dataset.df
-    # To be changed for non-binary classification
+    # To be changed for non-binary classificatio
+    
     count = np.zeros(2)
 
     for idx in df.index:

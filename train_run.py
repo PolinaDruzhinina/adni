@@ -289,6 +289,7 @@ def train_single_cnn(args):
         wandb.init(project=args.project_name, group=args.group_name, job_type='Kfold_' + str(fi), reinit=True)
         wandb.config.update(args)
         params = wandb.config
+        
         training_df, valid_df = load_data(params.tsv_path, params.diagnoses, fi, n_splits=params.n_splits,
                                           baseline=params.baseline, logger=main_logger)
 

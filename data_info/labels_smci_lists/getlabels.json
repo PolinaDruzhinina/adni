@@ -2,7 +2,7 @@
     "merged_tsv": "/data/merged.tsv",
     "missing_mods": "/data/missing_mods/",
     "diagnoses": [
-        "sMCI"
+        "pMCI"
     ],
     "modality": "t1w",
     "restriction_path": "/data/caps/QC_result.tsv",
