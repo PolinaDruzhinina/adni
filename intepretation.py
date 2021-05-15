@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 
 from data import load_data, get_transforms, MRIDatasetImage, generate_sampler
 from model import Conv5_FC3
-from utils import return_logger
+from utils import return_logger, display_interpretation
 from Interpretation.grad_cam import get_masks
 
 parser = argparse.ArgumentParser()
@@ -33,12 +33,8 @@ parser.add_argument('--gpu', default=True, type=bool, help='Use cuda to train mo
 parser.add_argument('--id_gpu', default=3, type=int, help="Id of gpu device")
 parser.add_argument('--learning_rate', default=1e-4, type=float, help='initial learning rate')
 parser.add_argument('--dropout', default=0.5, type=float, help='initial dropout')
-parser.add_argument('--epochs', default=20, type=int, help='max epoch for training')
-parser.add_argument('--save_folder', default='img/', help='Location to save checkpoint models')
 parser.add_argument('--mode', type=str, choices=['image', 'slice'], default='image')
 parser.add_argument('--model', help='model', type=str, default='Conv5_FC3')
-parser.add_argument('--tl_selection', help='transfer learning selection', type=str, default='best_loss')
-parser.add_argument('--mode_task', help='transfer learning from model', type=str, default='autoencoder')
 parser.add_argument('--weight_decay', default=1e-4, type=float, help='Weight decay')
 parser.add_argument('--minmaxnormalization', default=True, help='MinMaxNormalization')
 parser.add_argument('--data_augmentation', default=None, help='Augmentation')
@@ -73,6 +69,8 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam(filter(lambda x: x.requires_grad, model.parameters()),
                                      lr=args.learning_rate,
                                      weight_decay=args.weight_decay)
+        training_df, valid_df = load_data(args.tsv_path, args.diagnoses, fi, n_splits=args.n_splits,
+                                          baseline=args.baseline, logger=logger)
 
         if args.task == 'test':
             test_df = pd.DataFrame()
@@ -95,19 +93,12 @@ if __name__ == '__main__':
                                         labels=True)
             test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=False,
                                      num_workers=args.num_workers, pin_memory=True)
-            print(data_test.size)
             get_masks(model, test_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
                                    size=data_test.size, task = args.task)
             # np.save(os.path.join(CHECKPOINTS_DIR, 'masks_grad_cam_part1_for_labels_0'), masks_grad)
-        elif args.task == 'train/val':
-
-            training_df, valid_df = load_data(args.tsv_path, args.diagnoses, fi, n_splits=args.n_splits,
-                                              baseline=args.baseline, logger=logger)
+        elif args.task == 'train':
 
             data_train = MRIDatasetImage(args.input_dir, data_df=training_df, preprocessing=args.preprocessing,
-                                         train_transformations=train_transforms, all_transformations=all_transforms,
-                                         labels=True)
-            data_valid = MRIDatasetImage(args.input_dir, data_df=valid_df, preprocessing=args.preprocessing,
                                          train_transformations=train_transforms, all_transformations=all_transforms,
                                          labels=True)
 
@@ -115,13 +106,17 @@ if __name__ == '__main__':
 
             train_loader = DataLoader(data_train, batch_size=args.batch_size, sampler=train_sampler,
                                       num_workers=args.num_workers, pin_memory=True)
+            get_masks(model.module, train_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
+                                       size=data_train.size,task = args.task)
 
+        elif args.task == 'val':
+            data_valid = MRIDatasetImage(args.input_dir, data_df=valid_df, preprocessing=args.preprocessing,
+                                         train_transformations=train_transforms, all_transformations=all_transforms,
+                                         labels=True)
             valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=False,
                                       num_workers=args.num_workers, pin_memory=True)
+            get_masks(model.module, valid_loader, fi, args.output_dir, mean_mask=True,
+                                           mask_type='grad_cam',
+                                           size=data_valid.size, task=args.task)
 
-            print(data_train.size)
-            get_masks(model.module, train_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
-                                   size=data_train.size,task = args.task)
-            get_masks(model.module, valid_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
-                      size=data_valid.size, task = args.task)
 

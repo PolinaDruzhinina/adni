@@ -154,3 +154,67 @@ def display_table(table_path):
 
     format_df.index.name = None
     display(format_df)
+
+def visualize_image(decoder, dataloader, visualization_path, nb_images=1):
+    """
+    Writes the nifti files of images and their reconstructions by an autoencoder.
+    Args:
+        decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
+        dataloader: (DataLoader) wrapper of the dataset.
+        visualization_path: (str) directory in which the inputs and reconstructions will be stored.
+        nb_images: (int) number of images to reconstruct.
+    """
+    import nibabel as nib
+    import numpy as np
+
+    dataset = dataloader.dataset
+    decoder.eval()
+    dataset.eval()
+
+    for image_index in range(nb_images):
+        data = dataset[image_index]
+        image = data["image"].unsqueeze(0)
+        output = decoder(image)
+
+        output_np = output.squeeze(0).squeeze(0).cpu().detach().numpy()
+        input_np = image.squeeze(0).squeeze(0).cpu().detach().numpy()
+        output_nii = nib.Nifti1Image(output_np, np.eye(4))
+        input_nii = nib.Nifti1Image(input_np, np.eye(4))
+        nib.save(output_nii, os.path.join(
+            visualization_path, 'output-%i.nii.gz' % image_index))
+        nib.save(input_nii, os.path.join(
+            visualization_path, 'input-%i.nii.gz' % image_index))
+
+def plot_central_cuts(img, title="", t=None):
+    """
+    param image: tensor or np array of shape (CxDxHxW) if t is None
+    param image: tensor or np array of shape (TxCxDxHxW) if t is not None
+    """
+    if t is not None:
+        img = img[t]
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(3 * 6, 6))
+    fig.suptitle(title)
+    axes[0].imshow(img[0, img.shape[1] // 2, :, :])
+    axes[1].imshow(img[0, :, img.shape[2] // 2, :])
+    axes[2].imshow(img[0, :, :, img.shape[3] // 2])
+    plt.show()
+
+def display_interpretation(interp_img, data_img, cut_coords=(40, 25, 55), threshold=0.35, name = 'mean'):
+    import matplotlib.pyplot as plt
+    from nilearn import plotting
+    from os import path
+    import nibabel as nib
+    import pandas as pd
+    import numpy as np
+
+
+    fig, axes = plt.subplots(figsize=(16, 8))
+    roi_img = nib.Nifti1Image(interp_img, affine=np.eye(4))
+    bim_img = nib.Nifti1Image(np.squeeze(data_img), affine=np.eye(4))
+    if cut_coords is None:
+        plotting.plot_roi(roi_img, bim_img, axes=axes, colorbar=True, cmap='jet',
+                          threshold=threshold)
+    else:
+        plotting.plot_roi(roi_img, bim_img, cut_coords=cut_coords, axes=axes, colorbar=True, cmap='jet', threshold=threshold)
+    plt.show()
+    fig.savefig("grad_cam_".format(name), bbox_inches='tight')

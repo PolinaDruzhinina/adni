@@ -13,6 +13,8 @@ image_cnn/
 image_cnn_from_scratch/
 image_cnn_from_scratch_toler_0_bs4/
 image_cnn_mci_cn/
+image_cnn_pmci_cn/
+
 wandb/
         
 # Distribution / packaging
