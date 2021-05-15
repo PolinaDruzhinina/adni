@@ -346,3 +346,33 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None, u
         results = None
 
     return df_final, results
+
+
+def test_ae(decoder, dataloader, use_cuda, criterion):
+    """
+    Computes the total loss of a given autoencoder and dataset wrapped by DataLoader.
+    Args:
+        decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
+        dataloader: (DataLoader) wrapper of the dataset.
+        use_cuda: (bool) if True a gpu is used.
+        criterion: (loss) function to calculate the loss.
+    Returns:
+        (float) total loss of the model
+    """
+    decoder.eval()
+    dataloader.dataset.eval()
+
+    total_loss = 0
+    for i, data in enumerate(dataloader, 0):
+        if use_cuda:
+            inputs = data['image'].cuda()
+        else:
+            inputs = data['image']
+
+        outputs = decoder(inputs)
+        loss = criterion(outputs, inputs)
+        total_loss += loss.item()
+
+        del inputs, outputs, loss
+
+    return total_loss

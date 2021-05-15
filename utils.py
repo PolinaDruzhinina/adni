@@ -155,6 +155,35 @@ def display_table(table_path):
     format_df.index.name = None
     display(format_df)
 
+def visualize_image(decoder, dataloader, visualization_path, nb_images=1):
+    """
+    Writes the nifti files of images and their reconstructions by an autoencoder.
+    Args:
+        decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
+        dataloader: (DataLoader) wrapper of the dataset.
+        visualization_path: (str) directory in which the inputs and reconstructions will be stored.
+        nb_images: (int) number of images to reconstruct.
+    """
+    import nibabel as nib
+    import numpy as np
+
+    dataset = dataloader.dataset
+    decoder.eval()
+    dataset.eval()
+
+    for image_index in range(nb_images):
+        data = dataset[image_index]
+        image = data["image"].unsqueeze(0)
+        output = decoder(image)
+
+        output_np = output.squeeze(0).squeeze(0).cpu().detach().numpy()
+        input_np = image.squeeze(0).squeeze(0).cpu().detach().numpy()
+        output_nii = nib.Nifti1Image(output_np, np.eye(4))
+        input_nii = nib.Nifti1Image(input_np, np.eye(4))
+        nib.save(output_nii, os.path.join(
+            visualization_path, 'output-%i.nii.gz' % image_index))
+        nib.save(input_nii, os.path.join(
+            visualization_path, 'input-%i.nii.gz' % image_index))
 
 def plot_central_cuts(img, title="", t=None):
     """

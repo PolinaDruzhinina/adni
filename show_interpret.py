@@ -38,7 +38,7 @@ parser.add_argument('--data_augmentation', default=None, help='Augmentation')
 parser.add_argument('--verbose', '-v', action='count', default=0)
 args = parser.parse_args()
 
-sys.stdout.flush()odfc5
+sys.stdout.flush()
 if __name__ == '__main__':
     args = parser.parse_args()
 
