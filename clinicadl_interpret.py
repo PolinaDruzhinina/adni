@@ -21,7 +21,7 @@ parser.add_argument('--output_dir', help='path to output dir', type=str, default
 parser.add_argument('--input_dir', help='path to input dir', type=str, default='/data/caps')
 parser.add_argument('--tsv_path', help='path', type=str, default='/home/ADNI/data_info/labels_pamci_lists/test')
 parser.add_argument("--diagnoses", help="Labels that must be extracted from merged_tsv.",
-                    nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default='pMCI')
+                    nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['pMCI'])
 parser.add_argument("--target_diagnosis", help="Labels that must be extracted from merged_tsv.",
                     nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default='CN')
 parser.add_argument('--keep_true', default=None, type=bool, help='keep_true')
@@ -47,7 +47,7 @@ parser.add_argument('--model', help='model', type=str, default='Conv5_FC3')
 parser.add_argument('--minmaxnormalization', default=True, help='MinMaxNormalization')
 parser.add_argument('--data_augmentation', default=None, help='Augmentation')
 parser.add_argument('--verbose', '-v', action='count', default=0)
-
+parser.add_argument('--selection', type=str, default=['best_loss', 'best_balanced_accuracy'])
 args = parser.parse_args()
 
 sys.stdout.flush()
@@ -87,8 +87,9 @@ def individual_backprop(options):
             # Data management (remove data not well predicted by the CNN)
             test_df = pd.DataFrame()
             main_logger.debug("Test path %s" % options.tsv_path)
-
+            print(options.diagnoses)
             for diagnosis in options.diagnoses:
+                print(diagnosis)
                 test_diagnosis_path = path.join(
                         options.tsv_path, diagnosis + '_baseline.tsv')
 
@@ -108,12 +109,15 @@ def individual_backprop(options):
                                         train_transformations=None, all_transformations=all_transforms,
                                         labels=True)
 
+            if options.id_gpu is not None:
+                torch.cuda.set_device(options.id_gpu)
+
             model = eval(options.model)(dropout=options.dropout)
             if options.gpu:
                 model.cuda()
             else:
                 model.cpu()
-
+            
             model_dir = os.path.join(options.output_dir, fold, 'models', selection)
             model, best_epoch = load_model(model, model_dir, gpu=options.gpu, filename='model_best.pth.tar')
             options.output_dir = results_path
@@ -133,16 +137,16 @@ def individual_backprop(options):
                 results_df = results_df.sort_values(['participant_id', 'session_id']).reset_index(drop=True)
 
                 if options.keep_true:
-                    training_df = sorted_df[results_df.true_label == results_df.predicted_label].reset_index(drop=True)
+                    test_df = sorted_df[results_df.true_label == results_df.predicted_label].reset_index(drop=True)
                 else:
-                    training_df = sorted_df[results_df.true_label != results_df.predicted_label].reset_index(drop=True)
+                    test_df = sorted_df[results_df.true_label != results_df.predicted_label].reset_index(drop=True)
 
-            if len(training_df) > 0:
+            if len(test_df) > 0:
 
                 # Save the tsv files used for the saliency maps
-                training_df.to_csv(path.join('data.tsv'), sep='\t', index=False)
+                test_df.to_csv(path.join('data.tsv'), sep='\t', index=False)
 
-                dataset = MRIDatasetImage(options.input_dir, data_df=training_df, preprocessing=options.preprocessing,
+                dataset = MRIDatasetImage(options.input_dir, data_df=test_df, preprocessing=options.preprocessing,
                                                train_transformations=None, all_transformations=all_transforms,
                                                labels=True)
                 train_loader = DataLoader(dataset,

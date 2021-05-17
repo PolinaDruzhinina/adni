@@ -64,8 +64,8 @@ def read_json(options, json_path=None, test=False):
 
     for key, item in json_data.items():
         # We do not change computational options
-        if key in computational_list:
-            pass
+        #if key in computational_list:
+         #   pass
         # If used for evaluation, some parameters were already given
         if test and key in evaluation_parameters:
             pass
