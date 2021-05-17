@@ -214,11 +214,13 @@ def display_interpretation(interp_img, data_img, cut_coords=(40, 25, 55), thresh
 
     fig, axes = plt.subplots(figsize=(16, 8))
     roi_img = nib.Nifti1Image(interp_img, affine=np.eye(4))
-    bim_img = nib.Nifti1Image(np.squeeze(data_img), affine=np.eye(4))
+    print(data_img.shape)
+    print(np.squeeze(data_img).cpu().detach().numpy().shape)
+    bim_img = nib.Nifti1Image(np.squeeze(data_img).cpu().detach().numpy(), affine=np.eye(4))
     if cut_coords is None:
         plotting.plot_roi(roi_img, bim_img, axes=axes, colorbar=True, cmap='jet',
                           threshold=threshold)
     else:
         plotting.plot_roi(roi_img, bim_img, cut_coords=cut_coords, axes=axes, colorbar=True, cmap='jet', threshold=threshold)
     plt.show()
-    fig.savefig("grad_cam_".format(name), bbox_inches='tight')
+    fig.savefig("grad_cam_{}".format(name), bbox_inches='tight')

@@ -5,6 +5,8 @@ import sys
 import torch
 import argparse
 import pandas as pd
+import numpy as np
+import nibabel as nib
 
 from torch.utils.data import DataLoader
 
@@ -28,6 +30,7 @@ parser.add_argument("--threshold", help="threshold", type=float, default=0.35)
 parser.add_argument("--baseline", action="store_true", default=False,
                     help="If provided, only the baseline sessions are used for training.")
 parser.add_argument('--fold', default=0, type=int, help='Num of split')
+parser.add_argument('--n_splits', default=5, type=int, help='n splits for training')
 parser.add_argument('--preprocessing', help='Defines the type of preprocessing of CAPS data.',
                     choices=['t1-linear', 't1-extensive', 't1-volume'], type=str, default='t1-linear')
 parser.add_argument('-b', '--batch_size', default=4, type=int, help='Batch size for training')
@@ -70,10 +73,13 @@ if __name__ == '__main__':
         test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=False,
                                      num_workers=args.num_workers, pin_memory=True)
         dataset_img = data_test.__getitem__(args.item)
+        print(data_test.df)
         print(dataset_img['label'])
-        interp_img = np.load(args.interp_path)
+        print(dataset_img['image_path'])
+        #interp_img = np.load(args.interp_path)
+        interp_img = np.array(nib.load(args.interp_path).dataobj)
         print(interp_img.shape)
-        display_interpretation(interp_img, dataset_img['image'])
+        display_interpretation(interp_img, dataset_img['image'],name = args.name)
     elif args.task == 'train':
         data_train = MRIDatasetImage(args.input_dir, data_df=training_df, preprocessing=args.preprocessing,
                                          train_transformations=train_transforms, all_transformations=all_transforms,
