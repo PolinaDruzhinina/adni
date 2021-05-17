@@ -40,6 +40,111 @@ def return_logger(verbose, name_fn):
 
     return logger
 
+def read_json(options, json_path=None, test=False):
+    """
+    Read a json file to update python argparse Namespace.
+    Ensures retro-compatibility with previous namings in clinicadl.
+    Args:
+        options: (argparse.Namespace) options of the model.
+        json_path: (str) If given path to the json file, else found with options.model_path.
+        test: (bool) If given the reader will ignore some options specific to data.
+    Returns:
+        options (args.Namespace) options of the model updated
+    """
+    import json
+    from os import path
+
+    evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
+    prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}
+    if json_path is None:
+        json_path = path.join(options.model_path, 'commandline.json')
+
+    with open(json_path, "r") as f:
+        json_data = json.load(f)
+
+    for key, item in json_data.items():
+        # We do not change computational options
+        if key in computational_list:
+            pass
+        # If used for evaluation, some parameters were already given
+        if test and key in evaluation_parameters:
+            pass
+        else:
+            setattr(options, key, item)
+
+    # Retro-compatibility with runs of previous versions
+    if hasattr(options, "network"):
+        options.model = options.network
+        del options.network
+
+    if not hasattr(options, 'discarded_sliced'):
+        options.discarded_slices = 20
+
+    if isinstance(options.preprocessing, str):
+        if options.preprocessing in prep_compatibility_dict.keys():
+            options.preprocessing = prep_compatibility_dict[options.preprocessing]
+
+    if hasattr(options, 'mri_plane'):
+        options.slice_direction = options.mri_plane
+        del options.mri_plane
+
+    if hasattr(options, "hippocampus_roi"):
+        if options.hippocampus_roi:
+            options.mode = "roi"
+            del options.hippocampus_roi
+
+    if hasattr(options, "pretrained_path"):
+        options.transfer_learning_path = options.pretrained_path
+        del options.pretrained_path
+
+    if hasattr(options, "pretrained_difference"):
+        options.transfer_learning_difference = options.pretrained_difference
+        del options.pretrained_difference
+
+    if hasattr(options, 'patch_stride'):
+        options.stride_size = options.patch_stride
+
+    if hasattr(options, 'use_gpu'):
+        options.use_cpu = not options.use_gpu
+
+    if hasattr(options, 'mode'):
+        if options.mode == "subject":
+            options.mode = "image"
+        if options.mode == "slice" and not hasattr(options, "network_type"):
+            options.network_type = "cnn"
+        if options.mode == "patch" and hasattr(options, "network_type"):
+            if options.network_type == "multi":
+                options.network_type = "multicnn"
+
+    if not hasattr(options, "network_type"):
+        if hasattr(options, "mode_task"):
+            options.network_type = options.mode_task
+        elif hasattr(options, "train_autoencoder"):
+            options.network_type = "autoencoder"
+        else:
+            options.network_type = "cnn"
+
+    if hasattr(options, "selection"):
+        options.transfer_learning_selection = options.selection
+
+    if not hasattr(options, "loss"):
+        options.loss = "default"
+
+    if not hasattr(options, 'dropout') or options.dropout is None:
+        options.dropout = None
+        set_default_dropout(options)
+
+    if not hasattr(options, 'uncropped_roi'):
+        options.uncropped_roi = False
+
+    if not hasattr(options, 'roi_list'):
+        options.roi_list = None
+
+    if not hasattr(options, 'multi_cohort'):
+        options.multi_cohort = False
+
+    return options
+
 class EarlyStopping(object):
     def __init__(self, mode='min', min_delta=0, patience=10):
         self.mode = mode

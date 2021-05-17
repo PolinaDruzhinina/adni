@@ -77,7 +77,7 @@ if __name__ == '__main__':
         test_df["cohort"] = "single"
 
         data_test = MRIDatasetImage(args.input_dir, data_df=test_df, preprocessing=args.preprocessing,
-                                 train_transformations=train_transforms, all_transformations=all_transforms,
+                                 train_transformations=None, all_transformations=all_transforms,
                                  labels=True)
 
         test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle = False,
