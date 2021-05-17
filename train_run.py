@@ -62,7 +62,7 @@ parser.add_argument('--evaluation_steps', default=0, type=int,
 parser.add_argument('--minmaxnormalization', default=True, help='MinMaxNormalization')
 parser.add_argument('--data_augmentation', default=None, help='Augmentation')
 parser.add_argument('--verbose', '-v', action='count', default=0)
-parser.add_argument('--network_type', default='cnn', type='str', choices=[' autoencoder', 'cnn'])
+parser.add_argument('--network_type', type=str, choices=['autoencoder', 'cnn'], default='cnn')
 parser.add_argument('--visualization', default=True, type=bool, help='Use visualization for autoencoder')
 
 args = parser.parse_args()
@@ -334,7 +334,7 @@ def train_ae(decoder, train_loader, valid_loader, criterion, optimizer, resume,
     logger.debug("Beginning training")
     while epoch < options.epochs and not early_stopping.step(loss_valid):
         logger.info("Beginning epoch %i." % epoch)
-
+        print(epoch)
         decoder.zero_grad()
         evaluation_flag = True
         step_flag = True
@@ -433,7 +433,7 @@ def train_ae(decoder, train_loader, valid_loader, criterion, optimizer, resume,
         # Save optimizer state_dict to be able to reload
         save_checkpoint({'optimizer': optimizer.state_dict(),
                          'epoch': epoch,
-                         'name': options.optimizer,
+                         'name': 'Adam',
                          },
                         False, False,
                         model_dir,
@@ -538,10 +538,12 @@ def train_single_cnn(args):
               optimizer, False, log_dir, model_dir, params, train_logger)
             if params.visualization:
                 visualization_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'autoencoder_reconstruction')
-                check_and_clean(visualization_dir)
+               
                 best_decoder, _ = load_model(model, os.path.join(model_dir, "best_loss"),
                                              params.gpu, filename='model_best.pth.tar')
-                nb_images = data_train.size.elem_per_image
+                
+                nb_images = data_train.elem_per_image
+                print(nb_images)
                 if nb_images <= 2:
                     nb_images *= 3
                 visualize_image(best_decoder, valid_loader, os.path.join(visualization_dir, "validation"),

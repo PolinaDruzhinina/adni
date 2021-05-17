@@ -166,6 +166,10 @@ def visualize_image(decoder, dataloader, visualization_path, nb_images=1):
     """
     import nibabel as nib
     import numpy as np
+    import os
+    from train_run import check_and_clean
+
+    check_and_clean(visualization_path)
 
     dataset = dataloader.dataset
     decoder.eval()
@@ -173,7 +177,7 @@ def visualize_image(decoder, dataloader, visualization_path, nb_images=1):
 
     for image_index in range(nb_images):
         data = dataset[image_index]
-        image = data["image"].unsqueeze(0)
+        image = data["image"].unsqueeze(0).cuda()
         output = decoder(image)
 
         output_np = output.squeeze(0).squeeze(0).cpu().detach().numpy()
