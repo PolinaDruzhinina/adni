@@ -117,10 +117,11 @@ def individual_backprop(options):
                 model.cuda()
             else:
                 model.cpu()
-            
+            print(options.output_dir)
             model_dir = os.path.join(options.output_dir, fold, 'models', selection)
+            print(model_dir)
             model, best_epoch = load_model(model, model_dir, gpu=options.gpu, filename='model_best.pth.tar')
-            options.output_dir = results_path
+            options.results_path = results_path
             commandline_to_json(options, logger=main_logger)
 
             # Keep only subjects who were correctly / wrongly predicted by the network
