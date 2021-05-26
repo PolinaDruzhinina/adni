@@ -28,7 +28,7 @@ parser.add_argument('--transfer_learning_path', help='transfer_learning_path', t
 #parser.add_argument('--transfer_learning_path', help='transfer_learning_path', type=str, default='/data/results'
 #                                                                                                 '/image_autoencoder')
 parser.add_argument("--diagnoses", help="Labels that must be extracted from merged_tsv.",
-                    nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['MCI', 'CN'])
+                    nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['pMCI', 'CN'])
 parser.add_argument("--baseline", action="store_true", default=False,
                     help="If provided, only the baseline sessions are used for training.")
 parser.add_argument('--n_splits', default=5, type=int, help='n splits for training')

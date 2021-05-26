@@ -1,6 +1,7 @@
 import nipype.interfaces.fsl as fsl
 from nilearn.plotting import plot_anat
 import nilearn.plotting
+import nibabel as nib
 import os
 from tqdm import tqdm
 import shutil
@@ -87,5 +88,5 @@ def get_brain_from_mask():
 
 if __name__ == '__main__':
 
-    # adni_fsl_bet()
-    get_brain_from_mask()
+    adni_fsl_bet()
+   # get_brain_from_mask()
