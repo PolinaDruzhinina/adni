@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
             train_loader = DataLoader(data_train, batch_size=args.batch_size, sampler=train_sampler,
                                       num_workers=args.num_workers, pin_memory=True)
-            get_masks(model.module, train_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
+            get_masks(model, train_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
                                        size=data_train.size,task = args.task)
 
         elif args.task == 'val':
@@ -115,7 +115,7 @@ if __name__ == '__main__':
                                          labels=True)
             valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=False,
                                       num_workers=args.num_workers, pin_memory=True)
-            get_masks(model.module, valid_loader, fi, args.output_dir, mean_mask=True,
+            get_masks(model, valid_loader, fi, args.output_dir, mean_mask=True,
                                            mask_type='grad_cam',
                                            size=data_valid.size, task=args.task)
 
