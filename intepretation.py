@@ -21,7 +21,8 @@ parser.add_argument('--task', help='train/val or test', type=str, default='test'
 parser.add_argument("--diagnoses", help="Labels that must be extracted from merged_tsv.",
                     nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
 parser.add_argument("--mask_type", help="Type of interpretation",
-                    type=str, choices=['grad_cam'], default='grad_cam')
+                    type=str, choices=['grad_cam', 'guided_backprop', 'mean_pertrub'], default='grad_cam')
+parser.add_argument('--fold', default=0, type=int, help='Num of split')
 parser.add_argument("--baseline", action="store_true", default=False,
                     help="If provided, only the baseline sessions are used for training.")
 parser.add_argument('--n_splits', default=5, type=int, help='n splits for training')
@@ -51,72 +52,69 @@ if __name__ == '__main__':
                                                       minmaxnormalization=args.minmaxnormalization,
                                                       data_augmentation=args.data_augmentation)
 
-    fold_iterator = range(args.n_splits)
-    for fi in fold_iterator:
-        if logger is None:
-            logger = logger
+    if logger is None:
+        logger = logger
 
-        if args.id_gpu is not None:
-            torch.cuda.set_device(args.id_gpu)
+    if args.id_gpu is not None:
+        torch.cuda.set_device(args.id_gpu)
 
-        model = eval(args.model)(dropout=args.dropout)
-        if args.gpu:
-            model.cuda()
-        else:
-            model.cpu()
+    model = eval(args.model)(dropout=args.dropout)
+    if args.gpu:
+        model.cuda()
+    else:
+        model.cpu()
 
-        criterion = torch.nn.CrossEntropyLoss(reduction="sum")
-        optimizer = torch.optim.Adam(filter(lambda x: x.requires_grad, model.parameters()),
-                                     lr=args.learning_rate,
-                                     weight_decay=args.weight_decay)
-        training_df, valid_df = load_data(args.tsv_path, args.diagnoses, fi, n_splits=args.n_splits,
-                                          baseline=args.baseline, logger=logger)
+    criterion = torch.nn.CrossEntropyLoss(reduction="sum")
+    optimizer = torch.optim.Adam(filter(lambda x: x.requires_grad, model.parameters()),
+                                 lr=args.learning_rate,
+                                 weight_decay=args.weight_decay)
+    training_df, valid_df = load_data(args.tsv_path, args.diagnoses,args.fold, n_splits=args.n_splits,
+                                      baseline=args.baseline, logger=logger)
 
-        if args.task == 'test':
-            test_df = pd.DataFrame()
-        
-            logger.debug("Test path %s" % args.tsv_path)
+    if args.task == 'test':
+        test_df = pd.DataFrame()
 
-            for diagnosis in args.diagnoses:
-                test_diagnosis_path = path.join(
-                    args.tsv_path, diagnosis + '_baseline.tsv')
+        logger.debug("Test path %s" % args.tsv_path)
 
-                test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
+        for diagnosis in args.diagnoses:
+            test_diagnosis_path = path.join(
+                args.tsv_path, diagnosis + '_baseline.tsv')
 
-                test_df = pd.concat([test_df, test_diagnosis_df])
+            test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
 
-            test_df.reset_index(inplace=True, drop=True)
-            test_df["cohort"] = "single"
+            test_df = pd.concat([test_df, test_diagnosis_df])
 
-            data_test = MRIDatasetImage(args.input_dir, data_df=test_df, preprocessing=args.preprocessing,
-                                        train_transformations=train_transforms, all_transformations=all_transforms,
-                                        labels=True)
-            test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=False,
-                                     num_workers=args.num_workers, pin_memory=True)
-            get_masks(model, test_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
-                                   size=data_test.size, task = args.task)
-            # np.save(os.path.join(CHECKPOINTS_DIR, 'masks_grad_cam_part1_for_labels_0'), masks_grad)
-        elif args.task == 'train':
+        test_df.reset_index(inplace=True, drop=True)
+        test_df["cohort"] = "single"
 
-            data_train = MRIDatasetImage(args.input_dir, data_df=training_df, preprocessing=args.preprocessing,
-                                         train_transformations=train_transforms, all_transformations=all_transforms,
-                                         labels=True)
+        data_test = MRIDatasetImage(args.input_dir, data_df=test_df, preprocessing=args.preprocessing,
+                                    train_transformations=train_transforms, all_transformations=all_transforms,
+                                    labels=True)
+        test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=False,
+                                 num_workers=args.num_workers, pin_memory=True)
+        get_masks(model, test_loader, args.fold, args.output_dir, mean_mask=True, mask_type='grad_cam',
+                  size=data_test.size, task=args.task)
+        # np.save(os.path.join(CHECKPOINTS_DIR, 'masks_grad_cam_part1_for_labels_0'), masks_grad)
+    elif args.task == 'train':
 
-            train_sampler = generate_sampler(data_train)
+        data_train = MRIDatasetImage(args.input_dir, data_df=training_df, preprocessing=args.preprocessing,
+                                     train_transformations=train_transforms, all_transformations=all_transforms,
+                                     labels=True)
 
-            train_loader = DataLoader(data_train, batch_size=args.batch_size, sampler=train_sampler,
-                                      num_workers=args.num_workers, pin_memory=True)
-            get_masks(model, train_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
-                                       size=data_train.size,task = args.task)
+        train_sampler = generate_sampler(data_train)
 
-        elif args.task == 'val':
-            data_valid = MRIDatasetImage(args.input_dir, data_df=valid_df, preprocessing=args.preprocessing,
-                                         train_transformations=train_transforms, all_transformations=all_transforms,
-                                         labels=True)
-            valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=False,
-                                      num_workers=args.num_workers, pin_memory=True)
-            get_masks(model, valid_loader, fi, args.output_dir, mean_mask=True,
-                                           mask_type='grad_cam',
-                                           size=data_valid.size, task=args.task)
+        train_loader = DataLoader(data_train, batch_size=args.batch_size, sampler=train_sampler,
+                                  num_workers=args.num_workers, pin_memory=True)
+        get_masks(model, train_loader, args.fold, args.output_dir, mean_mask=True, mask_type='grad_cam',
+                  size=data_train.size, task=args.task)
 
+    elif args.task == 'val':
+        data_valid = MRIDatasetImage(args.input_dir, data_df=valid_df, preprocessing=args.preprocessing,
+                                     train_transformations=train_transforms, all_transformations=all_transforms,
+                                     labels=True)
+        valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=False,
+                                  num_workers=args.num_workers, pin_memory=True)
+        get_masks(model, valid_loader, args.fold, args.output_dir, mean_mask=True,
+                  mask_type='grad_cam',
+                  size=data_valid.size, task=args.task)
 

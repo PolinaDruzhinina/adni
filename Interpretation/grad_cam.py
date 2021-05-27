@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 import torch.nn.functional as F
 import nibabel as nib
-
+from mean_pertrub import MeanPertrub
 
 class GuidedBackprop():
     def __init__(self, model):
@@ -53,7 +53,7 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
     labels = []
     mask_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask_{}'.format(task))
     os.makedirs(mask_dir, exist_ok=True)
-    for i, data in enumerate(loader, 0):
+    for i, data in tqdm(enumerate(loader, 0)):
         image = data['image'].cuda()
         labels.append(data['label'].numpy().item())
         logit = model(image)
@@ -84,6 +84,10 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             pred = logit.data.max(1)[1].item()
             img_grad = gp.guided_backprop(image, pred)
             masks.append(img_grad)
+        elif mask_type == 'mean_pertrub':
+            mp = MeanPertrub(rep=1)
+            pred = logit.data.max(1)[1].item()
+            masks_pertrub = mp.get_masks(image, pred, model)
         else:
             raise NotImplementedType('define mask_type')
     del image, heatmap, activation, act_grad, pool_act_grad
@@ -95,6 +99,6 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             mean_1 = concat[labels_ad].mean(axis=0)
             m_dir = os.path.join(output_dir, 'fold-%i' % fold)
             nib.save(nib.Nifti1Image(mean_0, affine=np.eye(4)),
-                     os.path.join(m_dir, '{}_gradcam_mask_mean_0_{}.nii.gz'.format(name, task)))
+                     os.path.join(m_dir, '{}_{}_mean_0_{}.nii.gz'.format(name, mask_type, task)))
             nib.save(nib.Nifti1Image(mean_1, affine=np.eye(4)),
-                     os.path.join(m_dir, '{}_gradcam_mask_mean_1_{}.nii.gz'.format(name, task)))
+                     os.path.join(m_dir, '{}_{}_mean_1_{}.nii.gz'.format(name, mask_type, task)))
