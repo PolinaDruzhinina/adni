@@ -48,7 +48,7 @@ class AttentionMap():
         return np.concatenate(attention, axis=0)
 
 
-def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad_cam', size=(180, 180, 180), task = 'test', save_binary=None):
+def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad_cam', size=(180, 180, 180), task = 'test', save = None, save_binary=None):
     masks = []
     labels = []
     mask_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask_{}'.format(task))
@@ -70,7 +70,8 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             heatmap = F.interpolate(heatmap.unsqueeze(0), size[1:], mode='trilinear', align_corners=False)  # 58 70 58
             masks.append(heatmap.cpu().numpy())
             name = data['image_path'][0][-80:-53]
-            nib.save(nib.Nifti1Image(heatmap.cpu().numpy(), affine=np.eye(4)),
+            if save:
+                nib.save(nib.Nifti1Image(heatmap.cpu().numpy(), affine=np.eye(4)),
                      os.path.join(mask_dir, '{}_gradcam_mask.nii.gz'.format(name)))
             if save_binary:
                 mask_binary_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask_binary')
@@ -94,6 +95,6 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             mean_1 = concat[labels_ad].mean(axis=0)
             m_dir = os.path.join(output_dir, 'fold-%i' % fold)
             nib.save(nib.Nifti1Image(mean_0, affine=np.eye(4)),
-                     os.path.join(m_dir, '{}_gradcam_mask_mean_CN_{}.nii.gz'.format(name, task)))
+                     os.path.join(m_dir, '{}_gradcam_mask_mean_0_{}.nii.gz'.format(name, task)))
             nib.save(nib.Nifti1Image(mean_1, affine=np.eye(4)),
                      os.path.join(m_dir, '{}_gradcam_mask_mean_1_{}.nii.gz'.format(name, task)))

@@ -86,7 +86,33 @@ def get_brain_from_mask():
                              '{}/{}/{}/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz'.format(
                                  PATH_TO_MASK, sub,ses, sub, ses))
 
+def check_folder():
+    cropped = True
+    k = 0
+    for i, sub in tqdm(enumerate(os.listdir(PATH_TO_MRI))):
+        for ses in os.listdir(os.path.join(PATH_TO_MRI,sub)):
+            if cropped:
+                full_path = '{}/{}/{}/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz'.format(
+                    PATH_TO_MRI, sub, ses, sub, ses)
+                if os.path.exists(full_path):
+                    mask_path = '/data_dop/caps/subjects/{}/{}/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w_brain_mask.nii.gz'.format(PATH_TO_MASK, sub, ses, sub, ses)
+                    if not os.path.exists(mask_path):
+                        shutil.copyfile(full_path, mask_path)
+                    else:
+                        k += 1
+            else:
+                full_path = '{}/{}/{}/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz'.format(
+                    PATH_TO_MRI, sub, ses, sub, ses)
+                if os.path.exists(full_path):
+                    mask_path = '/data_dop/caps/subjects/{}/{}/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w_brain_mask.nii.gz'.format(
+                         sub, ses, sub, ses)
+                    if not os.path.exists(mask_path):
+                        shutil.copyfile(full_path, mask_path)
+                    else:
+                        k += 1
+    print(k)
 if __name__ == '__main__':
 
-    adni_fsl_bet()
+    # adni_fsl_bet()
    # get_brain_from_mask()
+    check_folder()
