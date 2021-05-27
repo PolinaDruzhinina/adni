@@ -97,7 +97,7 @@ def check_folder():
                     PATH_TO_MASK, sub, ses, sub, ses)
                 if os.path.exists(full_path):
                     l += 1
-                    mask_path = '/data_dop/caps/subjects/{}/{}/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w_brain_mask.nii.gz'.format( sub, ses, sub, ses)
+                    mask_path = '/data_dop/caps/subjects/{}/{}/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz'.format( sub, ses, sub, ses)
                     if not os.path.exists(mask_path):
                         shutil.copyfile(full_path, mask_path)
                     else:
@@ -108,7 +108,7 @@ def check_folder():
                 
                 if os.path.exists(full_path):
                     l +=1
-                    mask_path = '/data_dop/caps/subjects/{}/{}/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w_brain_mask.nii.gz'.format(
+                    mask_path = '/data_dop/caps/subjects/{}/{}/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz'.format(
                          sub, ses, sub, ses)
                     if not os.path.exists(mask_path):
                         shutil.copyfile(full_path, mask_path)
