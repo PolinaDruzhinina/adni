@@ -116,8 +116,44 @@ def check_folder():
                         k += 1
     print(k)
     print(l)
+
+
+def check_pt():
+    cropped = True
+    k = 0
+    l = 0
+    for i, sub in tqdm(enumerate(os.listdir(PATH_TO_MRI))):
+        for ses in os.listdir(os.path.join(PATH_TO_MRI, sub)):
+            if cropped:
+                full_path = '{}/{}/{}/deeplearning_prepare_data/image_based/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt'.format(
+                    PATH_TO_MRI, sub, ses, sub, ses)
+                if os.path.exists(full_path):
+                    l += 1
+                    mask_path = '/data_dop/caps/subjects/{}/{}/deeplearning_prepare_data/image_based/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt'.format(
+                        sub, ses, sub, ses)
+                    if not os.path.exists(mask_path):
+                        print('not find')
+                        print(mask_path)
+                    else:
+                        k += 1
+            else:
+                full_path = '{}/{}/{}/deeplearning_prepare_data/image_based/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt'.format(
+                    PATH_TO_MRI, sub, ses, sub, ses)
+
+                if os.path.exists(full_path):
+                    l += 1
+                    mask_path = '/data_dop/caps/subjects/{}/{}/deeplearning_prepare_data/image_based/t1_linear/{}_{}_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt'.format(
+                        sub, ses, sub, ses)
+                    if not os.path.exists(mask_path):
+                        print('not find')
+                        print(mask_path)
+                    else:
+                        k += 1
+    print(k)
+    print(l)
 if __name__ == '__main__':
 
     # adni_fsl_bet()
    # get_brain_from_mask()
-    check_folder()
+   #  check_folder()
+    check_pt
