@@ -156,4 +156,4 @@ if __name__ == '__main__':
     # adni_fsl_bet()
    # get_brain_from_mask()
    #  check_folder()
-    check_pt
+    check_pt()

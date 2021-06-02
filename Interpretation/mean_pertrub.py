@@ -132,7 +132,5 @@ class MeanPertrub():
         res.append(res_mask.cpu().numpy())
         i += 1
 
-    X_mask = np.concatenate(res, axis=0)
-    X_mask = X_mask.squeeze(axis=1)
 
-    return X_mask
+        return res

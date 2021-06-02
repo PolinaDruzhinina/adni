@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 import torch.nn.functional as F
 import nibabel as nib
-from mean_pertrub import MeanPertrub
+from .mean_pertrub import MeanPertrub
 
 class GuidedBackprop():
     def __init__(self, model):
@@ -79,19 +79,24 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
                 binary = heatmap.cpu().numpy()[heatmap.cpu().numpy() <= 0.35] = 0
                 nib.save(nib.Nifti1Image(binary, affine=np.eye(4)),
                          os.path.join(mask_binary_dir, '{}_gradcam_mask.nii.gz'.format(name)))
+            del image, heatmap, activation, act_grad, pool_act_grad
         elif mask_type == 'guided_backprop':
             gp = GuidedBackprop(model)
             pred = logit.data.max(1)[1].item()
             img_grad = gp.guided_backprop(image, pred)
             masks.append(img_grad)
+            del image, img_grad, pred
         elif mask_type == 'mean_pertrub':
             mp = MeanPertrub(rep=1)
             pred = logit.data.max(1)[1].item()
             masks_pertrub = mp.get_masks(image, pred, model)
+            masks.append(masks_pertrub)
+            del image, masks_pertrub, pred
         else:
             raise NotImplementedType('define mask_type')
-    del image, heatmap, activation, act_grad, pool_act_grad
+
     if mean_mask:
+            name = data['image_path'][0][-80:-53]
             concat = np.concatenate(masks, axis=0).squeeze(axis=1)
             labels_cn = np.array(labels) == 0
             labels_ad = np.array(labels) == 1
