@@ -67,11 +67,12 @@ class MeanPertrub():
 
     def get_masks(self, img, pred, model):
         res = []
-        N = len(X)
+        # N = len(img)
         rw_max = self.max_iter // 5
         i = 0
         # for img, _ in tqdm(X, total=len(X)):
             #             print(i)
+        print(img.shape)
         img = img.squeeze(axis=0)
         C, D, H, W = img.shape
         model_ans = pred
@@ -131,6 +132,4 @@ class MeanPertrub():
         res_mask = upsample((1 - best_mask), img_size=(D, H, W))
         res.append(res_mask.cpu().numpy())
         i += 1
-
-
-        return res
+        return res_mask.cpu().numpy()
