@@ -87,14 +87,17 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             masks.append(img_grad)
             del image, img_grad, pred
         elif mask_type == 'mean_pertrub':
-            mp = MeanPertrub(rep=1)
+            mp = MeanPertrub(rep=9)
             pred = logit.data.max(1)[1].item()
+            for param in model.parameters():
+                param.requires_grad = False
             masks_pertrub = mp.get_masks(image, pred, model)
             masks.append(masks_pertrub)
             del image, masks_pertrub, pred
         else:
             raise NotImplementedType('define mask_type')
-
+        if i > 15:
+            break
     if mean_mask:
             name = data['image_path'][0][-80:-53]
             concat = np.concatenate(masks, axis=0).squeeze(axis=1)

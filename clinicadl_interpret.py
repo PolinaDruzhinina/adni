@@ -30,6 +30,7 @@ parser.add_argument(
         "--nifti_template_path", type=str, default=None,
         help="Path to a nifti template to retrieve affine values.")
 parser.add_argument('--name', help='name', type=str, default='group-pMCI_target-CN')
+parser.add_argument('--fold', help='fold', type=int, default=0)
 parser.add_argument("--baseline", action="store_true", default=False,
                     help="If provided, only the baseline sessions are used for training.")
 parser.add_argument('--n_splits', default=5, type=int, help='n splits for training')
@@ -59,9 +60,9 @@ def individual_backprop(options):
 
     main_logger = return_logger(options.verbose, "main process")
 
-    fold_list = [fold for fold in os.listdir(options.output_dir) if fold[:5:] == "fold-"]
-    if len(fold_list) == 0:
-        raise ValueError("No folds were found at path %s" % options.output_dir)
+    #fold_list = [fold for fold in os.listdir(options.output_dir) if fold[:5:] == "fold-"]
+    #if len(fold_list) == 0:
+    #    raise ValueError("No folds were found at path %s" % options.output_dir)
 
     if os.path.exists(path.join(options.output_dir, 'commandline.json')):
         model_options = argparse.Namespace()
@@ -76,56 +77,57 @@ def individual_backprop(options):
     if options.target_diagnosis is None:
         options.target_diagnosis = options.diagnosis
 
-    for fold in fold_list:
-        main_logger.info(fold)
-        for selection in options.selection:
-            results_path = path.join(options.output_dir, fold, 'gradients',
+    #for fold in fold_list:
+    fold = 'fold-{}'.format(options.fold)
+    main_logger.info(fold)
+    for selection in options.selection:
+        results_path = path.join(options.output_dir, fold, 'gradients',
                                      selection, options.name)
 
-            criterion = torch.nn.CrossEntropyLoss(reduction="sum")
+        criterion = torch.nn.CrossEntropyLoss(reduction="sum")
 
-            # Data management (remove data not well predicted by the CNN)
-            test_df = pd.DataFrame()
-            main_logger.debug("Test path %s" % options.tsv_path)
-            print(options.diagnoses)
-            for diagnosis in options.diagnoses:
-                print(diagnosis)
-                test_diagnosis_path = path.join(
-                        options.tsv_path, diagnosis + '_baseline.tsv')
+        # Data management (remove data not well predicted by the CNN)
+        test_df = pd.DataFrame()
+        main_logger.debug("Test path %s" % options.tsv_path)
+        print(options.diagnoses)
+        for diagnosis in options.diagnoses:
+            print(diagnosis)
+            test_diagnosis_path = path.join(
+            options.tsv_path, diagnosis + '_baseline.tsv')
 
-                test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
-                test_df = pd.concat([test_df, test_diagnosis_df])
+            test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
+            test_df = pd.concat([test_df, test_diagnosis_df])
 
-                test_df.reset_index(inplace=True, drop=True)
-                test_df["cohort"] = "single"
+            test_df.reset_index(inplace=True, drop=True)
+            test_df["cohort"] = "single"
 
-            test_df.reset_index(drop=True, inplace=True)
+        test_df.reset_index(drop=True, inplace=True)
 
-            # Model creation
-            _, all_transforms = get_transforms(options.mode,
+        # Model creation
+        _, all_transforms = get_transforms(options.mode,
                                                minmaxnormalization=options.minmaxnormalization)
 
-            data_example = MRIDatasetImage(options.input_dir, data_df=test_df, preprocessing=options.preprocessing,
+        data_example = MRIDatasetImage(options.input_dir, data_df=test_df, preprocessing=options.preprocessing,
                                         train_transformations=None, all_transformations=all_transforms,
                                         labels=True)
 
-            if options.id_gpu is not None:
+        if options.id_gpu is not None:
                 torch.cuda.set_device(options.id_gpu)
 
-            model = eval(options.model)(dropout=options.dropout)
-            if options.gpu:
+        model = eval(options.model)(dropout=options.dropout)
+        if options.gpu:
                 model.cuda()
-            else:
+        else:
                 model.cpu()
-            print(options.output_dir)
-            model_dir = os.path.join(options.output_dir, fold, 'models', selection)
-            print(model_dir)
-            model, best_epoch = load_model(model, model_dir, gpu=options.gpu, filename='model_best.pth.tar')
-            options.results_path = results_path
-            commandline_to_json(options, logger=main_logger)
+        print(options.output_dir)
+        model_dir = os.path.join(options.output_dir, fold, 'models', selection)
+        print(model_dir)
+        model, best_epoch = load_model(model, model_dir, gpu=options.gpu, filename='model_best.pth.tar')
+        options.results_path = results_path
+        commandline_to_json(options, logger=main_logger)
 
-            # Keep only subjects who were correctly / wrongly predicted by the network
-            if options.keep_true is not None:
+        # Keep only subjects who were correctly / wrongly predicted by the network
+        if options.keep_true is not None:
                 dataloader = DataLoader(data_example,
                                         batch_size=options.batch_size,
                                         shuffle=False,
@@ -142,23 +144,22 @@ def individual_backprop(options):
                 else:
                     test_df = sorted_df[results_df.true_label != results_df.predicted_label].reset_index(drop=True)
 
-            if len(test_df) > 0:
+        if len(test_df) > 0:
 
-                # Save the tsv files used for the saliency maps
-                test_df.to_csv(path.join('data.tsv'), sep='\t', index=False)
-
-                dataset = MRIDatasetImage(options.input_dir, data_df=test_df, preprocessing=options.preprocessing,
+            # Save the tsv files used for the saliency maps
+            test_df.to_csv(path.join('data.tsv'), sep='\t', index=False)
+            dataset = MRIDatasetImage(options.input_dir, data_df=test_df, preprocessing=options.preprocessing,
                                                train_transformations=None, all_transformations=all_transforms,
                                                labels=True)
-                train_loader = DataLoader(dataset,
+            train_loader = DataLoader(dataset,
                                           batch_size=options.batch_size,
                                           shuffle=True,
                                           num_workers=options.num_workers,
                                           pin_memory=True)
 
-                interpreter = VanillaBackProp(model, gpu=options.gpu)
+            interpreter = VanillaBackProp(model, gpu=options.gpu)
 
-                for data in train_loader:
+            for data in train_loader:
                     if options.gpu:
                         input_batch = data['image'].cuda()
                     else:
@@ -166,7 +167,8 @@ def individual_backprop(options):
 
                     map_np = interpreter.generate_gradients(input_batch,
                                                             dataset.diagnosis_code[options.target_diagnosis])
-                    for i in range(options.batch_size):
+                    
+                    for i in range(len(data['participant_id'])):
                         single_path = path.join(results_path, data['participant_id'][i], data['session_id'][i])
                         os.makedirs(single_path, exist_ok=True)
 
