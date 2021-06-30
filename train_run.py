@@ -69,7 +69,7 @@ args = parser.parse_args()
 
 sys.stdout.flush()
 
-os.environ["WANDB_API_KEY"] = 'e42d0e4a9e1aeb4b9dab719ba8c7e39a0e0a1c7e'
+#os.environ["WANDB_API_KEY"] = 
 
 
 def check_and_clean(d):
