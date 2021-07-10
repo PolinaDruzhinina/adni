@@ -27,6 +27,7 @@ parser.add_argument("--mask_type", help="Type of interpretation",
 parser.add_argument("--baseline", action="store_true", default=False,
                     help="If provided, only the baseline sessions are used for training.")
 parser.add_argument('--n_splits', default=5, type=int, help='n splits for training')
+parser.add_argument('--fold', default=0, type=int, help='number of fold')
 parser.add_argument('--preprocessing', help='Defines the type of preprocessing of CAPS data.',
                     choices=['t1-linear', 't1-extensive', 't1-volume'], type=str, default='t1-linear')
 parser.add_argument('-b', '--batch_size', default=4, type=int, help='Batch size for training')
