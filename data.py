@@ -11,7 +11,8 @@ import logging
 import nibabel as nib
 
 FILENAME_TYPE = {'full': '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w',
-                 'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
+                 # 'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
+                 'cropped':'_acq-Sg3DT1200SlIso_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
                  'skull_stripped': '_space-Ixi549Space_desc-skullstripped_T1w',
                  'gm_maps': '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability',
                  'shepplogan': '_phantom-SheppLogan'}
@@ -118,6 +119,7 @@ def load_data(tsv_path, diagnoses_list,
         train_path = path.join(tsv_path, 'train')
         valid_path = path.join(tsv_path, 'validation')
 
+
     else:
         train_path = path.join(tsv_path, f'train_splits-{n_splits}', f'split-{split}')
         valid_path = path.join(tsv_path, f'validation_splits-{n_splits}', f'split-{split}')
@@ -125,7 +127,7 @@ def load_data(tsv_path, diagnoses_list,
     logger.debug("Train path %s" % train_path)
     logger.debug("Valid path %s" % valid_path)
     
-    for diagnosis in diagnoses_list:
+    for diagnosis in diagnes_list:
         if baseline:
             train_diagnosis_path = path.join(
                 train_path, diagnosis + '_baseline.tsv')

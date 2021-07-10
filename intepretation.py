@@ -5,6 +5,8 @@ import sys
 import torch
 import argparse
 import pandas as pd
+from pathlib import Path
+from collections import defaultdict
 
 from torch.utils.data import DataLoader
 
@@ -15,7 +17,7 @@ from Interpretation.grad_cam import get_masks
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output_dir', help='path to output dir', type=str, default='/home/ADNI/image_cnn')
-parser.add_argument('--input_dir', help='path to input dir', type=str, default='/data/caps')
+parser.add_argument('--input_dir', help='path to input dir', type=str, default='/home/datasets/@Megatron/project_Alexeevskaya_preproc/clinica/CAPS')
 parser.add_argument('--tsv_path', help='path', type=str, default='/home/ADNI/data_info/labels_lists_new')
 parser.add_argument('--task', help='train/val or test', type=str, default='test')
 parser.add_argument("--diagnoses", help="Labels that must be extracted from merged_tsv.",
@@ -51,71 +53,84 @@ if __name__ == '__main__':
                                                       minmaxnormalization=args.minmaxnormalization,
                                                       data_augmentation=args.data_augmentation)
 
-    fold_iterator = range(args.n_splits)
-    for fi in fold_iterator:
-        if logger is None:
-            logger = logger
+    fi = args.fold
+    if logger is None:
+        logger = logger
 
-        if args.id_gpu is not None:
-            torch.cuda.set_device(args.id_gpu)
+    if args.id_gpu is not None:
+        torch.cuda.set_device(args.id_gpu)
 
-        model = eval(args.model)(dropout=args.dropout)
-        if args.gpu:
-            model.cuda()
-        else:
-            model.cpu()
+    model = eval(args.model)(dropout=args.dropout)
+    if args.gpu:
+        model.cuda()
+    else:
+        model.cpu()
 
-        criterion = torch.nn.CrossEntropyLoss(reduction="sum")
-        optimizer = torch.optim.Adam(filter(lambda x: x.requires_grad, model.parameters()),
+    criterion = torch.nn.CrossEntropyLoss(reduction="sum")
+    optimizer = torch.optim.Adam(filter(lambda x: x.requires_grad, model.parameters()),
                                      lr=args.learning_rate,
                                      weight_decay=args.weight_decay)
-        training_df, valid_df = load_data(args.tsv_path, args.diagnoses, fi, n_splits=args.n_splits,
-                                          baseline=args.baseline, logger=logger)
+    if args.task == 'test':
+        test_df = pd.DataFrame()
+        image_paths=[]
+        result_dict=defaultdict(list)
+        logger.debug("Test path %s" % args.tsv_path)
+        image_dir = path.join(args.input_dir, 'subjects')
+        for pack in Path(image_dir).iterdir():
+            if pack.is_dir():
+                for inner_pack in Path(pack).iterdir():
+                    if inner_pack.is_dir():
+                        image_path = path.join(image_dir, pack.name, inner_pack.name,
+                                                   't1_linear',
+                                                   pack.name + '_' + inner_pack.name
+                                                   + '_acq-Sg3DT1200SlIso_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w_bet_skull_strip.nii.gz')
+                        if path.exists(image_path):
+                            result_dict["participant_id"].append(pack.name)
+                            result_dict["session_id"].append(inner_pack.name)
+            # for diagnosis in args.diagnoses:
+            #     test_diagnosis_path = path.join(
+            #         args.tsv_path, diagnosis + '_baseline.tsv')
+            #
+            #     test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
+            #
+            #     test_df = pd.concat([test_df, test_diagnosis_df])
+            #
+            # test_df.reset_index(inplace=True, drop=True)
+        test_df=pd.DataFrame.from_dict(result_dict)
+        test_df["diagnosis"]='MCI'
+        test_df["cohort"] = "single"
 
-        if args.task == 'test':
-            test_df = pd.DataFrame()
-        
-            logger.debug("Test path %s" % args.tsv_path)
-
-            for diagnosis in args.diagnoses:
-                test_diagnosis_path = path.join(
-                    args.tsv_path, diagnosis + '_baseline.tsv')
-
-                test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
-
-                test_df = pd.concat([test_df, test_diagnosis_df])
-
-            test_df.reset_index(inplace=True, drop=True)
-            test_df["cohort"] = "single"
-
-            data_test = MRIDatasetImage(args.input_dir, data_df=test_df, preprocessing=args.preprocessing,
+        data_test = MRIDatasetImage(args.input_dir, data_df=test_df, preprocessing=args.preprocessing,
                                         train_transformations=train_transforms, all_transformations=all_transforms,
                                         labels=True)
-            test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=False,
+        test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=False,
                                      num_workers=args.num_workers, pin_memory=True)
-            get_masks(model, test_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
+        get_masks(model, test_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
                                    size=data_test.size, task = args.task)
             # np.save(os.path.join(CHECKPOINTS_DIR, 'masks_grad_cam_part1_for_labels_0'), masks_grad)
-        elif args.task == 'train':
-
-            data_train = MRIDatasetImage(args.input_dir, data_df=training_df, preprocessing=args.preprocessing,
+    elif args.task == 'train':
+        training_df, valid_df = load_data(args.tsv_path, args.diagnoses, fi, n_splits=args.n_splits,
+                                                   baseline=args.baseline, logger=logger)
+        data_train = MRIDatasetImage(args.input_dir, data_df=training_df, preprocessing=args.preprocessing,
                                          train_transformations=train_transforms, all_transformations=all_transforms,
                                          labels=True)
 
-            train_sampler = generate_sampler(data_train)
+        train_sampler = generate_sampler(data_train)
 
-            train_loader = DataLoader(data_train, batch_size=args.batch_size, sampler=train_sampler,
+        train_loader = DataLoader(data_train, batch_size=args.batch_size, sampler=train_sampler,
                                       num_workers=args.num_workers, pin_memory=True)
-            get_masks(model.module, train_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
+        get_masks(model.module, train_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
                                        size=data_train.size,task = args.task)
 
-        elif args.task == 'val':
-            data_valid = MRIDatasetImage(args.input_dir, data_df=valid_df, preprocessing=args.preprocessing,
+    elif args.task == 'val':
+        training_df, valid_df = load_data(args.tsv_path, args.diagnoses, fi, n_splits=args.n_splits,
+                                          baseline=args.baseline, logger=logger)
+        data_valid = MRIDatasetImage(args.input_dir, data_df=valid_df, preprocessing=args.preprocessing,
                                          train_transformations=train_transforms, all_transformations=all_transforms,
                                          labels=True)
-            valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=False,
+        valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=False,
                                       num_workers=args.num_workers, pin_memory=True)
-            get_masks(model.module, valid_loader, fi, args.output_dir, mean_mask=True,
+        get_masks(model.module, valid_loader, fi, args.output_dir, mean_mask=True,
                                            mask_type='grad_cam',
                                            size=data_valid.size, task=args.task)
 
