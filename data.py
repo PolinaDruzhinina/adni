@@ -128,7 +128,7 @@ def load_data(tsv_path, diagnoses_list,
     logger.debug("Train path %s" % train_path)
     logger.debug("Valid path %s" % valid_path)
     
-    for diagnosis in diagnes_list:
+    for diagnosis in diagnoses_list:
         if baseline:
             train_diagnosis_path = path.join(
                 train_path, diagnosis + '_baseline.tsv')
