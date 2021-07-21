@@ -11,8 +11,9 @@ import logging
 import nibabel as nib
 
 FILENAME_TYPE = {'full': '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w',
-                 # 'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
-                 'cropped':'_acq-Sg3DT1200SlIso_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
+                 'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
+                 'cropped_alex':'_acq-Sg3DT1200SlIso_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w_bet_skull_strip',
+                 #'cropped':'_acq-Sg3DT1200SlIso_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
                  'skull_stripped': '_space-Ixi549Space_desc-skullstripped_T1w',
                  'gm_maps': '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability',
                  'shepplogan': '_phantom-SheppLogan'}
@@ -248,10 +249,16 @@ class MRIDataset(Dataset):
         if cohort not in self.caps_dict.keys():
             raise ValueError('Cohort names in labels and CAPS definitions do not match.')
 
-        image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
+        if 'ADNI' in participant:
+            image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
                                    participant + '_' + session
                                    + FILENAME_TYPE['cropped'] + '.pt')
+        else:
+            image_path = path.join('/data/clinica/CAPS', 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                   participant + '_' + session
+                                   + FILENAME_TYPE['cropped_alex'] + '.pt')
 
         return image_path
 
