@@ -3,7 +3,6 @@
 import torch
 import pandas as pd
 import numpy as np
-import os
 from os import path
 from torch.utils.data import Dataset, sampler
 import torchvision.transforms as transforms
@@ -257,7 +256,7 @@ class MRIDataset(Dataset):
                                    participant + '_' + session
                                    + FILENAME_TYPE['cropped'] + '.pt')
         else:
-            if os.exists(path.join('/data/clinica/CAPS', 'subjects', participant, session,
+            if path.exists(path.join('/data/clinica/CAPS', 'subjects', participant, session,
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
                                    participant + '_' + session
                                    + FILENAME_TYPE['cropped_alex_1176'] + '.pt')):
