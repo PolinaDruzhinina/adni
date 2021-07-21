@@ -55,6 +55,7 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
     os.makedirs(mask_dir, exist_ok=True)
     for i, data in enumerate(loader, 0):
         image = data['image'].cuda()
+       
         labels.append(data['label'].numpy().item())
         logit = model(image)
         if mask_type == 'grad_cam':
@@ -90,10 +91,10 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             concat = np.concatenate(masks, axis=0).squeeze(axis=1)
             labels_cn = np.array(labels) == 0
             labels_ad = np.array(labels) == 1
-            mean_0 = concat[labels_cn].mean(axis=0)
+           # mean_0 = concat[labels_cn].mean(axis=0)
             mean_1 = concat[labels_ad].mean(axis=0)
             m_dir = os.path.join(output_dir, 'fold-%i' % fold)
-            nib.save(nib.Nifti1Image(mean_0, affine=np.eye(4)),
-                     os.path.join(m_dir, '{}_gradcam_mask_mean_CN_{}.nii.gz'.format(name, task)))
+            #nib.save(nib.Nifti1Image(mean_0, affine=np.eye(4)),
+             #        os.path.join(m_dir, '{}_gradcam_mask_mean_CN_{}.nii.gz'.format(name, task)))
             nib.save(nib.Nifti1Image(mean_1, affine=np.eye(4)),
                      os.path.join(m_dir, '{}_gradcam_mask_mean_1_{}.nii.gz'.format(name, task)))
