@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 import torch.nn.functional as F
 import nibabel as nib
-
+from .mean_pertrub import MeanPertrub
 
 class GuidedBackprop():
     def __init__(self, model):
@@ -48,7 +48,7 @@ class AttentionMap():
         return np.concatenate(attention, axis=0)
 
 
-def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad_cam', size=(180, 180, 180), task = 'test', save_binary=None):
+def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad_cam', size=(180, 180, 180), task = 'test', save = None, save_binary=None):
     masks = []
     labels = []
     mask_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask_{}'.format(task))
@@ -70,23 +70,34 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             heatmap = F.interpolate(heatmap.unsqueeze(0), size[1:], mode='trilinear', align_corners=False)  # 58 70 58
             masks.append(heatmap.cpu().numpy())
             name = data['image_path'][0][-80:-53]
-            nib.save(nib.Nifti1Image(heatmap.cpu().numpy(), affine=np.eye(4)),
-                     os.path.join(mask_dir, '{}_gradcam_mask.nii.gz'.format(name)))
+            if save:
+                nib.save(nib.Nifti1Image(heatmap.cpu().numpy(), affine=np.eye(4)),
+                         os.path.join(mask_dir, '{}_gradcam_mask.nii.gz'.format(name)))
             if save_binary:
                 mask_binary_dir = os.path.join(output_dir, 'fold-%i' % fold, 'img_mask_binary')
                 os.makedirs(mask_dir, exist_ok=True)
                 binary = heatmap.cpu().numpy()[heatmap.cpu().numpy() <= 0.35] = 0
                 nib.save(nib.Nifti1Image(binary, affine=np.eye(4)),
                          os.path.join(mask_binary_dir, '{}_gradcam_mask.nii.gz'.format(name)))
+                del image, heatmap, activation, act_grad, pool_act_grad
         elif mask_type == 'guided_backprop':
             gp = GuidedBackprop(model)
             pred = logit.data.max(1)[1].item()
             img_grad = gp.guided_backprop(image, pred)
             masks.append(img_grad)
+            del image, img_grad, pred
+        elif mask_type == 'mean_pertrub':
+            mp = MeanPertrub(rep=9)
+            pred = logit.data.max(1)[1].item()
+            for param in model.parameters():
+                param.requires_grad = False
+            masks_pertrub = mp.get_masks(image, pred, model)
+            masks.append(masks_pertrub)
+            del image, masks_pertrub, pred
         else:
             raise NotImplementedType('define mask_type')
-    del image, heatmap, activation, act_grad, pool_act_grad
     if mean_mask:
+            name = data['image_path'][0][-80:-53]
             concat = np.concatenate(masks, axis=0).squeeze(axis=1)
             labels_cn = np.array(labels) == 0
             labels_ad = np.array(labels) == 1
@@ -94,6 +105,6 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             mean_1 = concat[labels_ad].mean(axis=0)
             m_dir = os.path.join(output_dir, 'fold-%i' % fold)
             nib.save(nib.Nifti1Image(mean_0, affine=np.eye(4)),
-                     os.path.join(m_dir, '{}_gradcam_mask_mean_CN_{}.nii.gz'.format(name, task)))
+                     os.path.join(m_dir, '{}_{}_mean_CN_{}.nii.gz'.format(name, mask_type, task)))
             nib.save(nib.Nifti1Image(mean_1, affine=np.eye(4)),
-                     os.path.join(m_dir, '{}_gradcam_mask_mean_1_{}.nii.gz'.format(name, task)))
+                     os.path.join(m_dir, '{}_{}_mean_1_{}.nii.gz'.format(name, mask_type, task)))

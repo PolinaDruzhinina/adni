@@ -23,11 +23,12 @@ parser.add_argument('--task', help='train/val or test', type=str, default='test'
 parser.add_argument("--diagnoses", help="Labels that must be extracted from merged_tsv.",
                     nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
 parser.add_argument("--mask_type", help="Type of interpretation",
-                    type=str, choices=['grad_cam'], default='grad_cam')
+                    type=str, choices=['grad_cam', 'guided_backprop', 'mean_pertrub'], default='grad_cam')
 parser.add_argument("--baseline", action="store_true", default=False,
                     help="If provided, only the baseline sessions are used for training.")
 parser.add_argument('--n_splits', default=5, type=int, help='n splits for training')
 parser.add_argument('--fold', default=0, type=int, help='number of fold')
+parser.add_argument('--save', default=True, help='save individualmask')
 parser.add_argument('--preprocessing', help='Defines the type of preprocessing of CAPS data.',
                     choices=['t1-linear', 't1-extensive', 't1-volume'], type=str, default='t1-linear')
 parser.add_argument('-b', '--batch_size', default=4, type=int, help='Batch size for training')
@@ -106,8 +107,8 @@ if __name__ == '__main__':
                                         labels=True)
         test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=False,
                                      num_workers=args.num_workers, pin_memory=True)
-        get_masks(model, test_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
-                                   size=data_test.size, task = args.task)
+        get_masks(model, test_loader, fi, args.output_dir, mean_mask=True, mask_type=args.mask_type,
+                                   size=data_test.size, task = args.task, save=args.save)
             # np.save(os.path.join(CHECKPOINTS_DIR, 'masks_grad_cam_part1_for_labels_0'), masks_grad)
     elif args.task == 'train':
         training_df, valid_df = load_data(args.tsv_path, args.diagnoses, fi, n_splits=args.n_splits,
@@ -120,8 +121,8 @@ if __name__ == '__main__':
 
         train_loader = DataLoader(data_train, batch_size=args.batch_size, sampler=train_sampler,
                                       num_workers=args.num_workers, pin_memory=True)
-        get_masks(model.module, train_loader, fi, args.output_dir, mean_mask=True, mask_type='grad_cam',
-                                       size=data_train.size,task = args.task)
+        get_masks(model, train_loader, fi, args.output_dir, mean_mask=True, mask_type=args.mask_type,
+                                       size=data_train.size,task = args.task, save=args.save)
 
     elif args.task == 'val':
         training_df, valid_df = load_data(args.tsv_path, args.diagnoses, fi, n_splits=args.n_splits,
@@ -131,8 +132,8 @@ if __name__ == '__main__':
                                          labels=True)
         valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=False,
                                       num_workers=args.num_workers, pin_memory=True)
-        get_masks(model.module, valid_loader, fi, args.output_dir, mean_mask=True,
-                                           mask_type='grad_cam',
-                                           size=data_valid.size, task=args.task)
+        get_masks(model, valid_loader, fi, args.output_dir, mean_mask=True,
+                                           mask_type=args.mask_type,
+                                           size=data_valid.size, task=args.task, save=args.save)
 
 
