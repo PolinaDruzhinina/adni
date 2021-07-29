@@ -14,6 +14,7 @@ FILENAME_TYPE = {'full': '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w',
                  'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
                  'cropped_alex_1176':'_acq-Sg3DT1176SlIso_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w_bet_skull_strip',
                  'cropped_alex_1200':'_acq-Sg3DT1200SlIso_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w_bet_skull_strip',
+                 'cropped_alex':'_acq-SgT1W_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w_bet_skull_strip',
                  #'cropped':'_acq-Sg3DT1200SlIso_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
                  'skull_stripped': '_space-Ixi549Space_desc-skullstripped_T1w',
                  'gm_maps': '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability',
@@ -264,12 +265,19 @@ class MRIDataset(Dataset):
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
                                    participant + '_' + session
                                    + FILENAME_TYPE['cropped_alex_1176'] + '.pt')
-            else:
+            elif path.exists(path.join('/data/clinica/CAPS', 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                   participant + '_' + session
+                                   + FILENAME_TYPE['cropped_alex_1200'] + '.pt')):
                 image_path = path.join('/data/clinica/CAPS', 'subjects', participant, session,
                                        'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
                                        participant + '_' + session
                                        + FILENAME_TYPE['cropped_alex_1200'] + '.pt')
-
+            else:
+                image_path = path.join('/data/clinica/CAPS', 'subjects', participant, session,
+                                       'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                       participant + '_' + session
+                                       + FILENAME_TYPE['cropped_alex'] + '.pt')
         return image_path
 
     def _get_meta_data(self, idx):
