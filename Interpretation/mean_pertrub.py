@@ -52,7 +52,7 @@ class GaussianFilter(nn.Module):
 class MeanPertrub():
     def __init__(self, mask_scale=4, blur_img=10, blur_mask=10, max_iter=300,
                  l1_coef=3, tv_coef=1, tv_beta=7, rep=10, jit=5, k_size=5, lr=0.3):
-        # self.device = device
+        #self.device = device
         self.lr = lr
         self.mask_scale = 4
         self.blur_img = blur_img
@@ -72,12 +72,11 @@ class MeanPertrub():
         i = 0
         # for img, _ in tqdm(X, total=len(X)):
             #             print(i)
-        print(img.shape)
         img = img.squeeze(axis=0)
         C, D, H, W = img.shape
         model_ans = pred
         mask = torch.ones((1, C, D // self.mask_scale, H // self.mask_scale, W // self.mask_scale),
-                          requires_grad=True).cuda()
+                          requires_grad=True, device="cuda")
         optimizer = Adam([mask], lr=self.lr, betas=(0.9, 0.99), amsgrad=True)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
         best_loss, best_mask = float('inf'), None
@@ -90,7 +89,7 @@ class MeanPertrub():
             #                 print(mask_up)
             total_pred_loss = 0
             for _ in range(self.rep):
-                img_jit = jittering(img, self.jit, C, D, H, W)
+                img_jit = jittering(img.cpu(), self.jit, C, D, H, W)
                 j0 = np.random.randint(self.jit)
                 j1 = np.random.randint(self.jit)
                 j2 = np.random.randint(self.jit)

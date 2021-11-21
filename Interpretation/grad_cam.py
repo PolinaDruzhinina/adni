@@ -69,7 +69,10 @@ def get_masks(model, loader, fold, output_dir, mean_mask = True, mask_type='grad
             heatmap /= torch.max(heatmap)
             heatmap = F.interpolate(heatmap.unsqueeze(0), size[1:], mode='trilinear', align_corners=False)  # 58 70 58
             masks.append(heatmap.cpu().numpy())
-            name = data['image_path'][0][-80:-53]
+           # name = data['image_path'][0][-80:-53]
+            name = data['image_path'][0].split("/")[-1][:16]
+            print(name)
+            print(data['image_path'][0])
             if save:
                 nib.save(nib.Nifti1Image(heatmap.cpu().numpy(), affine=np.eye(4)),
                          os.path.join(mask_dir, '{}_gradcam_mask.nii.gz'.format(name)))
